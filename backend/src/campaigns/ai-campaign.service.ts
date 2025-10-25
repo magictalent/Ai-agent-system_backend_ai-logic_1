@@ -110,6 +110,19 @@ export class AiCampaignService {
         // Generate personalized WhatsApp message
         const message = await this.aiService.generateLeadMessage(lead, campaign.name);
         
+        // Create message record in database
+        await this.createMessage({
+          campaign_id: campaign.id,
+          lead_id: lead.id,
+          lead_name: `${lead.firstname} ${lead.lastname}`,
+          lead_email: lead.email,
+          lead_phone: (lead as any).phone || null,
+          channel: 'whatsapp',
+          content: message || 'No message content',
+          status: 'sent',
+          direction: 'outbound'
+        });
+        
         // Log AI activity
         await this.logAiActivity(campaign.id, 'message_generated', `Generated WhatsApp message for ${lead.firstname} ${lead.lastname}`);
         
@@ -138,6 +151,19 @@ export class AiCampaignService {
         // Generate personalized email
         const message = await this.aiService.generateLeadMessage(lead, campaign.name);
         
+        // Create message record in database
+        await this.createMessage({
+          campaign_id: campaign.id,
+          lead_id: lead.id,
+          lead_name: `${lead.firstname} ${lead.lastname}`,
+          lead_email: lead.email,
+          lead_phone: (lead as any).phone || null,
+          channel: 'email',
+          content: message || 'No message content',
+          status: 'sent',
+          direction: 'outbound'
+        });
+        
         // Send email using existing AI service
         await this.aiService.sendMessageToLead(client.id, lead.id, campaign.name, userId);
         
@@ -163,6 +189,20 @@ export class AiCampaignService {
     for (const lead of leads.leads.slice(0, 15)) {
       try {
         const message = await this.aiService.generateLeadMessage(lead, campaign.name);
+        
+        // Create message record in database
+        await this.createMessage({
+          campaign_id: campaign.id,
+          lead_id: lead.id,
+          lead_name: `${lead.firstname} ${lead.lastname}`,
+          lead_email: lead.email,
+          lead_phone: (lead as any).phone || null,
+          channel: 'sms',
+          content: message || 'No message content',
+          status: 'sent',
+          direction: 'outbound'
+        });
+        
         console.log(`📱 SMS for ${lead.firstname}: ${message}`);
         
         await this.logAiActivity(campaign.id, 'sms_generated', `SMS generated for ${lead.firstname} ${lead.lastname}`);
@@ -246,5 +286,34 @@ export class AiCampaignService {
       .eq('id', campaignId);
 
     if (error) console.error('Error updating metrics:', error);
+  }
+
+  private async createMessage(messageData: {
+    campaign_id: string;
+    lead_id: string;
+    lead_name: string;
+    lead_email: string;
+    lead_phone?: string;
+    channel: 'whatsapp' | 'email' | 'sms';
+    content: string;
+    status: 'sent' | 'delivered' | 'read' | 'replied' | 'failed';
+    direction: 'outbound' | 'inbound';
+  }) {
+    const { data, error } = await this.supabase
+      .from('messages')
+      .insert([{
+        ...messageData,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      }])
+      .select();
+
+    if (error) {
+      console.error('Error creating message:', error);
+      throw new Error(error.message);
+    }
+
+    console.log('✅ Message created:', data?.[0]?.id);
+    return data?.[0];
   }
 }

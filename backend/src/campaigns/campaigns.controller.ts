@@ -25,11 +25,38 @@ export class CampaignsController {
     try {
       const userId = req.user.id;
       
-      // Simple response for now
-      console.log('📊 AI Dashboard: Returning simple response');
+      // Get active campaigns
+      const campaigns = await this.campaignsService.getAllCampaigns(userId);
+      const activeCampaigns = campaigns.filter(c => c.status === 'active');
+      
+      console.log('📊 AI Dashboard: Found campaigns:', campaigns.length, 'Active:', activeCampaigns.length);
+      
+      // Get AI status for each campaign
+      const campaignsWithAiStatus = await Promise.all(
+        activeCampaigns.map(async (campaign) => {
+          try {
+            const aiStatus = await this.aiCampaignService.getAiCampaignStatus(campaign.id, userId);
+            return {
+              ...campaign,
+              ai_status: aiStatus
+            };
+          } catch (error) {
+            console.error(`❌ Error getting AI status for campaign ${campaign.id}:`, error);
+            return {
+              ...campaign,
+              ai_status: {
+                campaignId: campaign.id,
+                activities: [],
+                lastActivity: null
+              }
+            };
+          }
+        })
+      );
+      
       return {
-        total_active_campaigns: 0,
-        campaigns: []
+        total_active_campaigns: activeCampaigns.length,
+        campaigns: campaignsWithAiStatus
       };
     } catch (error) {
       console.error('❌ AI Dashboard error:', error);

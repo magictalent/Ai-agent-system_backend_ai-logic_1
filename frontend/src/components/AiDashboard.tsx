@@ -193,7 +193,7 @@ export default function AiDashboard() {
             <div className="border-t pt-3">
               <h5 className="text-sm font-medium text-gray-700 mb-2">Recent AI Activity</h5>
               <div className="space-y-2 max-h-32 overflow-y-auto">
-                {campaign.ai_status.activities.slice(0, 3).map((activity) => (
+                {campaign.ai_status?.activities?.slice(0, 3).map((activity) => (
                   <div key={activity.id} className="text-xs text-gray-600 bg-gray-50 p-2 rounded">
                     <div className="font-medium">{activity.activity_type.replace('_', ' ')}</div>
                     <div>{activity.description}</div>
@@ -202,7 +202,7 @@ export default function AiDashboard() {
                     </div>
                   </div>
                 ))}
-                {campaign.ai_status.activities.length === 0 && (
+                {(!campaign.ai_status?.activities || campaign.ai_status.activities.length === 0) && (
                   <div className="text-xs text-gray-500 italic">No recent activity</div>
                 )}
               </div>
