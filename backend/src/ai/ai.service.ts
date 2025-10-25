@@ -20,11 +20,11 @@ export class AiService {
   ) {}
 
   /** Fetch leads from the client's CRM */
-  async getClientLeads(clientId: string) {
-    const client = await this.clientsService.getClientById(clientId);
+  async getClientLeads(clientId: string, userId: string) {
+    const client = await this.clientsService.getClientById(clientId, userId);
     if (!client) throw new Error(`Client with ID ${clientId} not found`);
 
-    const leads = await this.crmService.getLeads(client.crm_provider, client.token);
+    const leads = await this.crmService.getLeads(client.crm_provider, 'mock-token');
     return { client: client.name, crm: client.crm_provider, total: leads.length, leads };
   }
 
@@ -42,16 +42,17 @@ Keep it professional, persuasive, and polite.`;
   }
 
   /** Send message and save to Supabase */
-  async sendMessageToLead(clientId: string, leadId: string, offer: string) {
-    const client = await this.clientsService.getClientById(clientId);
+  async sendMessageToLead(clientId: string, leadId: string, offer: string, userId: string) {
+    const client = await this.clientsService.getClientById(clientId, userId);
     if (!client) throw new Error(`Client ${clientId} not found`);
   
     // TypeScript now knows client is not undefined
-    const lead = await this.crmService.getLeadById(client.crm_provider, leadId, client.token!);
+    const lead = await this.crmService.getLeadById(client.crm_provider, leadId, 'mock-token');
   
     const messageText = await this.generateLeadMessage(lead, offer);
   
     await this.gmailService.sendEmail({
+      clientId, // ✅ pass the client ID here
       to: lead.email,
       subject: `Regarding your interest in ${offer}`,
       text: messageText ?? '',
@@ -75,11 +76,11 @@ Keep it professional, persuasive, and polite.`;
   
 
   /** Schedule meeting and save to Supabase */
-  async bookMeeting(clientId: string, leadId: string, time: string) {
-    const client = await this.clientsService.getClientById(clientId);
+  async bookMeeting(clientId: string, leadId: string, time: string, userId: string) {
+    const client = await this.clientsService.getClientById(clientId, userId);
     if (!client) throw new Error(`Client ${clientId} not found`);
   
-    const lead = await this.crmService.getLeadById(client.crm_provider, leadId, client.token!);
+    const lead = await this.crmService.getLeadById(client.crm_provider, leadId, 'mock-token');
   
     const event = await this.calendarService.createEvent({
       summary: `Meeting with ${lead.firstname} ${lead.lastname}`,

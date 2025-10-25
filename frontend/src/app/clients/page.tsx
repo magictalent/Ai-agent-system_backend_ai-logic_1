@@ -1,158 +1,215 @@
 'use client'
 
-import { useState } from 'react'
-import { Search, Filter, Plus, Mail, Phone, MessageCircle, Calendar } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import { Client, CreateClientData } from '@/types/client'
+import AddClientModal from '@/components/AddClientModal'
+import ClientsTable from '@/components/ClientsTable'
+import { useAuth } from '@/contexts/AuthContext'
 
-interface Client {
-  id: string
-  name: string
-  email: string
-  phone: string
-  status: 'active' | 'inactive' | 'onboarding'
-  campaigns: number
-  leads: number
-  lastActive: string
-}
+export default function ClientsPage() {
+  const [clients, setClients] = useState<Client[]>([])
+  const [loading, setLoading] = useState(true)
+  const [showAddModal, setShowAddModal] = useState(false)
+  const [error, setError] = useState('')
+  const { user, token } = useAuth()
 
-const clients: Client[] = [
-  {
-    id: '1',
-    name: 'TechCorp Inc.',
-    email: 'john@techcorp.com',
-    phone: '+1 (555) 123-4567',
-    status: 'active',
-    campaigns: 3,
-    leads: 217,
-    lastActive: '2024-01-15'
-  },
-  {
-    id: '2',
-    name: 'StartupXYZ',
-    email: 'sarah@startupxyz.com',
-    phone: '+1 (555) 987-6543',
-    status: 'active',
-    campaigns: 2,
-    leads: 89,
-    lastActive: '2024-01-14'
-  },
-  {
-    id: '3',
-    name: 'Global Solutions',
-    email: 'mike@globalsolutions.com',
-    phone: '+1 (555) 456-7890',
-    status: 'onboarding',
-    campaigns: 0,
-    leads: 0,
-    lastActive: '2024-01-10'
-  },
-  {
-    id: '4',
-    name: 'Innovate Labs',
-    email: 'lisa@innovatelabs.com',
-    phone: '+1 (555) 234-5678',
-    status: 'inactive',
-    campaigns: 1,
-    leads: 45,
-    lastActive: '2023-12-20'
-  }
-]
+  // Fetch clients from backend
+  const fetchClients = async () => {
+    try {
+      setLoading(true)
+      const response = await fetch('http://localhost:3001/clients', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      })
 
-export default function Clients() {
-  const [searchTerm, setSearchTerm] = useState('')
+      if (!response.ok) {
+        throw new Error('Failed to fetch clients')
+      }
 
-  const filteredClients = clients.filter(client =>
-    client.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    client.email.toLowerCase().includes(searchTerm.toLowerCase())
-  )
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'active': return 'bg-green-100 text-green-800'
-      case 'inactive': return 'bg-gray-100 text-gray-800'
-      case 'onboarding': return 'bg-blue-100 text-blue-800'
-      default: return 'bg-gray-100 text-gray-800'
+      const data = await response.json()
+      setClients(data)
+    } catch (err: any) {
+      setError(err.message)
+    } finally {
+      setLoading(false)
     }
   }
 
+  // Create new client
+  const handleCreateClient = async (clientData: CreateClientData) => {
+    try {
+      const response = await fetch('http://localhost:3001/clients/add', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(clientData),
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.message || 'Failed to create client')
+      }
+
+      const newClient = await response.json()
+      setClients(prev => [...prev, newClient])
+    } catch (err: any) {
+      throw new Error(err.message || 'Failed to create client')
+    }
+  }
+
+  // Delete client
+  const handleDeleteClient = async (clientId: string) => {
+    if (!confirm('Are you sure you want to delete this client?')) return
+
+    try {
+      const response = await fetch(`http://localhost:3001/clients/${clientId}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to delete client')
+      }
+
+      setClients(prev => prev.filter(client => client.id !== clientId))
+    } catch (err: any) {
+      setError(err.message)
+    }
+  }
+
+  useEffect(() => {
+    if (user && token) {
+      fetchClients()
+    }
+  }, [user, token])
+
+  if (!user) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <h2 className="text-2xl font-bold text-gray-900 mb-4">Please log in</h2>
+          <p className="text-gray-600">You need to be logged in to view clients.</p>
+        </div>
+      </div>
+    )
+  }
+
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">Clients</h1>
-          <p className="text-gray-600 mt-2">Manage your clients and their automation flows</p>
+    <div className="min-h-screen bg-gray-50">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Header */}
+        <div className="mb-8">
+          <div className="flex justify-between items-center">
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900">Clients</h1>
+              <p className="mt-2 text-gray-600">
+                Manage your client relationships and CRM integrations
+              </p>
+            </div>
+            <button
+              onClick={() => setShowAddModal(true)}
+              className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors flex items-center space-x-2"
+            >
+              <span>+</span>
+              <span>Add Client</span>
+            </button>
+          </div>
         </div>
-        <button className="bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-blue-700 transition flex items-center space-x-2">
-          <Plus size={20} />
-          <span>Add Client</span>
-        </button>
-      </div>
 
-      {/* Search and Filters */}
-      <div className="flex space-x-4">
-        <div className="flex-1 relative">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
-          <input
-            type="text"
-            placeholder="Search clients..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-          />
-        </div>
-        <button className="px-4 py-3 border border-gray-300 rounded-lg hover:bg-gray-50 transition flex items-center space-x-2">
-          <Filter size={20} />
-          <span>Filter</span>
-        </button>
-      </div>
+        {/* Error Message */}
+        {error && (
+          <div className="mb-6 p-4 bg-red-50 border border-red-200 text-red-700 rounded-lg">
+            {error}
+            <button
+              onClick={() => setError('')}
+              className="ml-2 text-red-500 hover:text-red-700"
+            >
+              ×
+            </button>
+          </div>
+        )}
 
-      {/* Clients Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {filteredClients.map((client) => (
-          <div key={client.id} className="bg-white rounded-xl border border-gray-200 p-6 hover:shadow-lg transition">
-            <div className="flex justify-between items-start mb-4">
-              <div>
-                <h3 className="text-lg font-semibold text-gray-900">{client.name}</h3>
-                <span className={`inline-block px-2 py-1 rounded-full text-xs font-medium mt-2 ${getStatusColor(client.status)}`}>
-                  {client.status}
-                </span>
+        {/* Stats Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+          <div className="bg-white p-6 rounded-lg shadow">
+            <div className="flex items-center">
+              <div className="p-2 bg-blue-100 rounded-lg">
+                <span className="text-blue-600 text-xl">👥</span>
               </div>
-            </div>
-
-            <div className="space-y-3 mb-4">
-              <div className="flex items-center space-x-2 text-sm text-gray-600">
-                <Mail size={16} />
-                <span>{client.email}</span>
+              <div className="ml-4">
+                <p className="text-sm font-medium text-gray-500">Total Clients</p>
+                <p className="text-2xl font-bold text-gray-900">{clients.length}</p>
               </div>
-              <div className="flex items-center space-x-2 text-sm text-gray-600">
-                <Phone size={16} />
-                <span>{client.phone}</span>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4 mb-4">
-              <div className="text-center">
-                <div className="text-2xl font-bold text-gray-900">{client.campaigns}</div>
-                <div className="text-xs text-gray-500">Campaigns</div>
-              </div>
-              <div className="text-center">
-                <div className="text-2xl font-bold text-gray-900">{client.leads}</div>
-                <div className="text-xs text-gray-500">Leads</div>
-              </div>
-            </div>
-
-            <div className="flex space-x-2">
-              <button className="flex-1 bg-blue-50 text-blue-700 py-2 rounded-lg font-medium hover:bg-blue-100 transition flex items-center justify-center space-x-1">
-                <MessageCircle size={16} />
-                <span>Messages</span>
-              </button>
-              <button className="flex-1 bg-green-50 text-green-700 py-2 rounded-lg font-medium hover:bg-green-100 transition flex items-center justify-center space-x-1">
-                <Calendar size={16} />
-                <span>Calendar</span>
-              </button>
             </div>
           </div>
-        ))}
+
+          <div className="bg-white p-6 rounded-lg shadow">
+            <div className="flex items-center">
+              <div className="p-2 bg-green-100 rounded-lg">
+                <span className="text-green-600 text-xl">🔗</span>
+              </div>
+              <div className="ml-4">
+                <p className="text-sm font-medium text-gray-500">CRM Connected</p>
+                <p className="text-2xl font-bold text-gray-900">
+                  {clients.filter(c => c.crm_connected).length}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white p-6 rounded-lg shadow">
+            <div className="flex items-center">
+              <div className="p-2 bg-yellow-100 rounded-lg">
+                <span className="text-yellow-600 text-xl">🤖</span>
+              </div>
+              <div className="ml-4">
+                <p className="text-sm font-medium text-gray-500">AI Active</p>
+                <p className="text-2xl font-bold text-gray-900">
+                  {clients.filter(c => c.ai_status !== 'idle').length}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white p-6 rounded-lg shadow">
+            <div className="flex items-center">
+              <div className="p-2 bg-purple-100 rounded-lg">
+                <span className="text-purple-600 text-xl">📊</span>
+              </div>
+              <div className="ml-4">
+                <p className="text-sm font-medium text-gray-500">This Month</p>
+                <p className="text-2xl font-bold text-gray-900">
+                  {clients.filter(c => {
+                    const created = new Date(c.created_at)
+                    const now = new Date()
+                    return created.getMonth() === now.getMonth() && created.getFullYear() === now.getFullYear()
+                  }).length}
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Clients Table */}
+        <ClientsTable
+          clients={clients}
+          loading={loading}
+          onDelete={handleDeleteClient}
+        />
+
+        {/* Add Client Modal */}
+        <AddClientModal
+          isOpen={showAddModal}
+          onClose={() => setShowAddModal(false)}
+          onSubmit={handleCreateClient}
+        />
       </div>
     </div>
   )

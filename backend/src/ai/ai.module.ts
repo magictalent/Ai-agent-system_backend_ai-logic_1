@@ -7,7 +7,6 @@ import { GmailService } from '../integrations/gmail.service';
 import { CalendarService } from '../integrations/calendar.service';
 import { IntegrationsModule } from '../integrations/integrations.module';
 import { SupabaseModule } from '../supabase/supabase.module';
-import { ClientsController } from '../clients/add/clients.controller';
 
 @Module({
   imports: [
@@ -16,7 +15,7 @@ import { ClientsController } from '../clients/add/clients.controller';
     SupabaseModule, // ✅ Add SupabaseModule for SupabaseService dependency
   ],
   providers: [AiService, GmailService, CalendarService],
-  controllers: [AiController, ClientsController],
+  controllers: [AiController],
   exports: [AiService],
 })
 export class AiModule {}

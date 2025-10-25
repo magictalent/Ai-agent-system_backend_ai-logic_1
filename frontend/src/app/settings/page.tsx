@@ -1,29 +1,29 @@
 'use client'
 
 import { useState } from 'react'
-import { Save, Mail, MessageCircle, Calendar, Shield, Database, Bell } from 'lucide-react'
+import { Save, Mail, MessageCircle, Calendar, Shield, Bell, User } from 'lucide-react'
 
 export default function Settings() {
   const [settings, setSettings] = useState({
+    // Profile
+    businessName: 'AutoMart Co.',
+    contactEmail: 'contact@automart.com',
+    phoneNumber: '+1 (555) 123-4567',
+    
     // AI Settings
-    aiModel: 'gpt-4',
-    maxTokens: 1000,
-    temperature: 0.7,
-    
-    // Messaging Settings
+    aiPersonality: 'professional',
+    responseSpeed: 'balanced',
     workingHours: { start: '09:00', end: '17:00' },
-    timezone: 'UTC-5',
-    followUpDelay: 48,
-    
-    // Integration Settings
-    openaiApiKey: '',
-    twilioEnabled: true,
-    sendgridEnabled: true,
     
     // Notification Settings
     emailNotifications: true,
-    slackNotifications: false,
-    dailyReports: true
+    smsNotifications: false,
+    newLeadAlerts: true,
+    appointmentReminders: true,
+    
+    // Integration Settings
+    calendarSync: true,
+    crmSync: false
   })
 
   const handleSave = () => {
@@ -37,7 +37,7 @@ export default function Settings() {
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Settings</h1>
-          <p className="text-gray-600 mt-2">Configure your AI Sales Agents system</p>
+          <p className="text-gray-600 mt-2">Configure your AI agent and preferences</p>
         </div>
         <button 
           onClick={handleSave}
@@ -53,11 +53,10 @@ export default function Settings() {
         <div className="lg:col-span-1">
           <nav className="space-y-1">
             {[
-              { id: 'ai', icon: Shield, label: 'AI Configuration' },
-              { id: 'messaging', icon: MessageCircle, label: 'Messaging' },
-              { id: 'integrations', icon: Database, label: 'Integrations' },
+              { id: 'profile', icon: User, label: 'Business Profile' },
+              { id: 'ai', icon: Shield, label: 'AI Agent Settings' },
               { id: 'notifications', icon: Bell, label: 'Notifications' },
-              { id: 'calendar', icon: Calendar, label: 'Calendar' }
+              { id: 'integrations', icon: Calendar, label: 'Integrations' }
             ].map((item) => {
               const Icon = item.icon
               return (
@@ -75,50 +74,69 @@ export default function Settings() {
 
         {/* Settings Content */}
         <div className="lg:col-span-2 space-y-6">
-          {/* AI Configuration */}
+          {/* Business Profile */}
           <div className="bg-white rounded-xl border border-gray-200 p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">AI Configuration</h3>
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Business Profile</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">AI Model</label>
-                <select 
-                  value={settings.aiModel}
-                  onChange={(e) => setSettings({...settings, aiModel: e.target.value})}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                >
-                  <option value="gpt-4">GPT-4</option>
-                  <option value="gpt-3.5-turbo">GPT-3.5 Turbo</option>
-                  <option value="claude-2">Claude 2</option>
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Max Tokens</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Business Name</label>
                 <input 
-                  type="number"
-                  value={settings.maxTokens}
-                  onChange={(e) => setSettings({...settings, maxTokens: parseInt(e.target.value)})}
+                  type="text"
+                  value={settings.businessName}
+                  onChange={(e) => setSettings({...settings, businessName: e.target.value})}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Temperature</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Contact Email</label>
                 <input 
-                  type="number"
-                  step="0.1"
-                  min="0"
-                  max="1"
-                  value={settings.temperature}
-                  onChange={(e) => setSettings({...settings, temperature: parseFloat(e.target.value)})}
+                  type="email"
+                  value={settings.contactEmail}
+                  onChange={(e) => setSettings({...settings, contactEmail: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Phone Number</label>
+                <input 
+                  type="tel"
+                  value={settings.phoneNumber}
+                  onChange={(e) => setSettings({...settings, phoneNumber: e.target.value})}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
             </div>
           </div>
 
-          {/* Messaging Settings */}
+          {/* AI Agent Settings */}
           <div className="bg-white rounded-xl border border-gray-200 p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Messaging Settings</h3>
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">AI Agent Settings</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">AI Personality</label>
+                <select 
+                  value={settings.aiPersonality}
+                  onChange={(e) => setSettings({...settings, aiPersonality: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="professional">Professional</option>
+                  <option value="friendly">Friendly</option>
+                  <option value="formal">Formal</option>
+                  <option value="casual">Casual</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Response Speed</label>
+                <select 
+                  value={settings.responseSpeed}
+                  onChange={(e) => setSettings({...settings, responseSpeed: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="fast">Fast (Immediate)</option>
+                  <option value="balanced">Balanced (1-5 minutes)</option>
+                  <option value="delayed">Delayed (5-15 minutes)</option>
+                </select>
+              </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">Working Hours Start</label>
                 <input 
@@ -137,53 +155,58 @@ export default function Settings() {
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Follow-up Delay (hours)</label>
-                <input 
-                  type="number"
-                  value={settings.followUpDelay}
-                  onChange={(e) => setSettings({...settings, followUpDelay: parseInt(e.target.value)})}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
             </div>
           </div>
 
-          {/* Integration Settings */}
+          {/* Notification Settings */}
           <div className="bg-white rounded-xl border border-gray-200 p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Integration Settings</h3>
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Notification Settings</h3>
             <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">OpenAI API Key</label>
-                <input 
-                  type="password"
-                  value={settings.openaiApiKey}
-                  onChange={(e) => setSettings({...settings, openaiApiKey: e.target.value})}
-                  placeholder="sk-..."
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
               <div className="flex items-center justify-between">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">Twilio Integration</label>
-                  <p className="text-sm text-gray-500">Enable WhatsApp & SMS messaging</p>
+                  <label className="block text-sm font-medium text-gray-700">Email Notifications</label>
+                  <p className="text-sm text-gray-500">Receive updates via email</p>
                 </div>
                 <input 
                   type="checkbox"
-                  checked={settings.twilioEnabled}
-                  onChange={(e) => setSettings({...settings, twilioEnabled: e.target.checked})}
+                  checked={settings.emailNotifications}
+                  onChange={(e) => setSettings({...settings, emailNotifications: e.target.checked})}
                   className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
                 />
               </div>
               <div className="flex items-center justify-between">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">SendGrid Integration</label>
-                  <p className="text-sm text-gray-500">Enable email messaging</p>
+                  <label className="block text-sm font-medium text-gray-700">SMS Notifications</label>
+                  <p className="text-sm text-gray-500">Receive text message alerts</p>
                 </div>
                 <input 
                   type="checkbox"
-                  checked={settings.sendgridEnabled}
-                  onChange={(e) => setSettings({...settings, sendgridEnabled: e.target.checked})}
+                  checked={settings.smsNotifications}
+                  onChange={(e) => setSettings({...settings, smsNotifications: e.target.checked})}
+                  className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                />
+              </div>
+              <div className="flex items-center justify-between">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">New Lead Alerts</label>
+                  <p className="text-sm text-gray-500">Get notified of new leads</p>
+                </div>
+                <input 
+                  type="checkbox"
+                  checked={settings.newLeadAlerts}
+                  onChange={(e) => setSettings({...settings, newLeadAlerts: e.target.checked})}
+                  className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                />
+              </div>
+              <div className="flex items-center justify-between">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Appointment Reminders</label>
+                  <p className="text-sm text-gray-500">Reminders before meetings</p>
+                </div>
+                <input 
+                  type="checkbox"
+                  checked={settings.appointmentReminders}
+                  onChange={(e) => setSettings({...settings, appointmentReminders: e.target.checked})}
                   className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
                 />
               </div>

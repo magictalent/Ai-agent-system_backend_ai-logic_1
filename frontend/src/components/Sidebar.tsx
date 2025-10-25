@@ -6,7 +6,8 @@ import {
   Megaphone, 
   Calendar, 
   Settings,
-  Plus
+  Plus,
+  MessageCircle
 } from 'lucide-react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
@@ -14,6 +15,8 @@ import { usePathname } from 'next/navigation'
 const menuItems = [
   { icon: LayoutDashboard, label: 'Dashboard', href: '/dashboard' },
   { icon: Users, label: 'Clients', href: '/clients' },
+  { icon: Users, label: 'Leads', href: '/leads' },
+  { icon: MessageCircle, label: 'Messages', href: '/messages' },
   { icon: Megaphone, label: 'Campaigns', href: '/campaigns' },
   { icon: Calendar, label: 'Calendar', href: '/calendar' },
   { icon: Settings, label: 'Settings', href: '/settings' },
