@@ -39,6 +39,10 @@ export default function AiDashboard() {
   const fetchAiDashboard = async () => {
     try {
       setLoading(true)
+      setError('')
+      
+      console.log('🔍 Fetching AI dashboard...')
+      
       const response = await fetch('http://localhost:3001/campaigns/ai-dashboard', {
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -46,13 +50,19 @@ export default function AiDashboard() {
         },
       })
 
+      console.log('📡 AI Dashboard response status:', response.status)
+
       if (!response.ok) {
-        throw new Error('Failed to fetch AI dashboard')
+        const errorText = await response.text()
+        console.error('❌ AI Dashboard error:', errorText)
+        throw new Error(`AI Dashboard API error: ${response.status} - ${errorText}`)
       }
 
       const data = await response.json()
+      console.log('📊 AI Dashboard data:', data)
       setDashboardData(data)
     } catch (err: any) {
+      console.error('❌ AI Dashboard fetch error:', err)
       setError(err.message)
     } finally {
       setLoading(false)
@@ -86,12 +96,35 @@ export default function AiDashboard() {
     return (
       <div className="bg-red-50 border border-red-200 rounded-lg p-4">
         <p className="text-red-700">Error loading AI dashboard: {error}</p>
-        <button
-          onClick={fetchAiDashboard}
-          className="mt-2 px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
-        >
-          Retry
-        </button>
+        <div className="mt-2 space-x-2">
+          <button
+            onClick={fetchAiDashboard}
+            className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
+          >
+            Retry
+          </button>
+          <button
+            onClick={async () => {
+              try {
+                const response = await fetch('http://localhost:3001/campaigns', {
+                  headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json',
+                  },
+                });
+                const data = await response.json();
+                console.log('📊 Campaigns data:', data);
+                alert(`Found ${data.length} campaigns. Check console for details.`);
+              } catch (err) {
+                console.error('❌ Campaigns test failed:', err);
+                alert(`Campaigns test failed: ${err.message}`);
+              }
+            }}
+            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+          >
+            Test Campaigns API
+          </button>
+        </div>
       </div>
     )
   }

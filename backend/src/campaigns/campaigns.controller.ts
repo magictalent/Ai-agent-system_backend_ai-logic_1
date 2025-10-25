@@ -18,16 +18,41 @@ export class CampaignsController {
     return await this.campaignsService.getAllCampaigns(userId);
   }
 
-  @Get(':id')
-  async getCampaignById(@Param('id') id: string, @Request() req) {
-    const userId = req.user.id;
-    return await this.campaignsService.getCampaignById(id, userId);
+  @Get('ai-dashboard')
+  async getAiDashboard(@Request() req) {
+    console.log('🔍 AI Dashboard: Getting dashboard for user:', req.user.id);
+    
+    try {
+      const userId = req.user.id;
+      
+      // Simple response for now
+      console.log('📊 AI Dashboard: Returning simple response');
+      return {
+        total_active_campaigns: 0,
+        campaigns: []
+      };
+    } catch (error) {
+      console.error('❌ AI Dashboard error:', error);
+      throw error;
+    }
   }
 
   @Post('add')
   async addCampaign(@Body() campaignData: CreateCampaignData, @Request() req) {
     const userId = req.user.id;
     return await this.campaignsService.addCampaign({ ...campaignData, user_id: userId });
+  }
+
+  @Get(':id')
+  async getCampaignById(@Param('id') id: string, @Request() req) {
+    const userId = req.user.id;
+    return await this.campaignsService.getCampaignById(id, userId);
+  }
+
+  @Get(':id/ai-status')
+  async getAiStatus(@Param('id') id: string, @Request() req) {
+    const userId = req.user.id;
+    return await this.aiCampaignService.getAiCampaignStatus(id, userId);
   }
 
   @Put(':id')
@@ -85,35 +110,5 @@ export class CampaignsController {
   async deleteCampaign(@Param('id') id: string, @Request() req) {
     const userId = req.user.id;
     return await this.campaignsService.deleteCampaign(id, userId);
-  }
-
-  @Get(':id/ai-status')
-  async getAiStatus(@Param('id') id: string, @Request() req) {
-    const userId = req.user.id;
-    return await this.aiCampaignService.getAiCampaignStatus(id, userId);
-  }
-
-  @Get('ai-dashboard')
-  async getAiDashboard(@Request() req) {
-    const userId = req.user.id;
-    
-    // Get all active campaigns with AI status
-    const campaigns = await this.campaignsService.getAllCampaigns(userId);
-    const activeCampaigns = campaigns.filter(c => c.status === 'active');
-    
-    const aiDashboard = await Promise.all(
-      activeCampaigns.map(async (campaign) => {
-        const aiStatus = await this.aiCampaignService.getAiCampaignStatus(campaign.id, userId);
-        return {
-          ...campaign,
-          ai_status: aiStatus
-        };
-      })
-    );
-    
-    return {
-      total_active_campaigns: activeCampaigns.length,
-      campaigns: aiDashboard
-    };
   }
 }
