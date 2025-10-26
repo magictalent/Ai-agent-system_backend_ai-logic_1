@@ -141,7 +141,7 @@ export default function ClientsPage() {
           <div className="bg-white p-6 rounded-lg shadow">
             <div className="flex items-center">
               <div className="p-2 bg-blue-100 rounded-lg">
-                <span className="text-blue-600 text-xl">👥</span>
+                <img src="/icons/users.png" alt="Total Clients" className="w-10 h-10" />
               </div>
               <div className="ml-4">
                 <p className="text-sm font-medium text-gray-500">Total Clients</p>
@@ -153,7 +153,7 @@ export default function ClientsPage() {
           <div className="bg-white p-6 rounded-lg shadow">
             <div className="flex items-center">
               <div className="p-2 bg-green-100 rounded-lg">
-                <span className="text-green-600 text-xl">🔗</span>
+                <img src="/icons/crm.png" alt="CRM Connected" className="w-10 h-10" />
               </div>
               <div className="ml-4">
                 <p className="text-sm font-medium text-gray-500">CRM Connected</p>
@@ -167,7 +167,7 @@ export default function ClientsPage() {
           <div className="bg-white p-6 rounded-lg shadow">
             <div className="flex items-center">
               <div className="p-2 bg-yellow-100 rounded-lg">
-                <span className="text-yellow-600 text-xl">🤖</span>
+                <img src="/icons/ai.png" alt="AI Active" className="w-10 h-10" />
               </div>
               <div className="ml-4">
                 <p className="text-sm font-medium text-gray-500">AI Active</p>
@@ -181,7 +181,7 @@ export default function ClientsPage() {
           <div className="bg-white p-6 rounded-lg shadow">
             <div className="flex items-center">
               <div className="p-2 bg-purple-100 rounded-lg">
-                <span className="text-purple-600 text-xl">📊</span>
+                <img src="/icons/chart.png" alt="This Month" className="w-10 h-10" />
               </div>
               <div className="ml-4">
                 <p className="text-sm font-medium text-gray-500">This Month</p>
