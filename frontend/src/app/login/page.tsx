@@ -103,8 +103,15 @@ export default function Login() {
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100">
       <div className="max-w-md w-full space-y-8 p-8 bg-white rounded-2xl shadow-lg">
         <div className="text-center">
-          <div className="mx-auto w-16 h-16 bg-blue-600 rounded-full flex items-center justify-center">
+          {/* <div className="mx-auto w-16 h-16 bg-blue-600 rounded-full flex items-center justify-center">
             <span className="text-white text-2xl font-bold">AI</span>
+          </div> */}
+          <div className="flex justify-center">
+            <img
+              src="/logo.png"
+              alt="AI Sales Agents Logo"
+              className="w-32 h-32 object-contain"
+            />
           </div>
           <h2 className="mt-4 text-3xl font-bold text-gray-900">Welcome Back</h2>
           <p className="mt-2 text-gray-600">Sign in to your AI Sales Agents dashboard</p>

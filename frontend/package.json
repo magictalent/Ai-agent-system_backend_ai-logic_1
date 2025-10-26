@@ -10,10 +10,14 @@
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",
+    "@lottiefiles/dotlottie-react": "^0.17.5",
+    "@react-three/drei": "^10.7.6",
+    "@react-three/fiber": "^9.4.0",
     "@supabase/supabase-js": "^2.76.1",
     "axios": "^1.12.2",
     "clsx": "^2.1.1",
     "dotenv": "^17.2.3",
+    "lottie-react": "^2.4.1",
     "lucide-react": "^0.546.0",
     "next": "16.0.0",
     "react": "19.2.0",
@@ -21,6 +25,7 @@
     "react-hook-form": "^7.65.0",
     "swr": "^2.3.6",
     "tailwind-merge": "^3.3.1",
+    "three": "^0.180.0",
     "zod": "^4.1.12"
   },
   "devDependencies": {

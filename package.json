@@ -3,14 +3,17 @@
     "version": "1.0.0",
     "description": "24/7 AI Sales Agents Platform",
     "scripts": {
-      "dev:frontend": "cd frontend && npm run dev",
-      "dev:backend": "cd backend && npm run start:dev",
-      "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
-      "install:all": "npm install && cd frontend && npm install && cd ../backend && npm install",
-      "build:frontend": "cd frontend && npm run build",
-      "build:backend": "cd backend && npm run build"
+        "dev:frontend": "cd frontend && npm run dev",
+        "dev:backend": "cd backend && npm run start:dev",
+        "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
+        "install:all": "npm install && cd frontend && npm install && cd ../backend && npm install",
+        "build:frontend": "cd frontend && npm run build",
+        "build:backend": "cd backend && npm run build"
     },
     "devDependencies": {
-      "concurrently": "^7.6.0"
+        "concurrently": "^7.6.0"
+    },
+    "dependencies": {
+        "lottie-react": "^2.4.1"
     }
-  }
+}

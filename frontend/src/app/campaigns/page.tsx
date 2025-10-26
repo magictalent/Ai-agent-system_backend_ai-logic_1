@@ -204,7 +204,7 @@ export default function CampaignsPage() {
               onClick={() => setShowAddModal(true)}
               className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors flex items-center space-x-2"
             >
-              <span>+</span>
+              <img src="/icons/plus.png" alt="New" className="w-8 h-7" />
               <span>New Campaign</span>
             </button>
           </div>
@@ -222,7 +222,7 @@ export default function CampaignsPage() {
                 className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <span className="text-gray-400">🔍</span>
+                <img src="/icons/search.png" alt="Search" className="w-5 h-5 text-gray-400" />
               </div>
             </div>
           </div>
@@ -239,7 +239,7 @@ export default function CampaignsPage() {
               <option value="completed">Completed</option>
             </select>
             <button className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors flex items-center space-x-2">
-              <span>🔧</span>
+              <img src="/icons/filter.png" alt="Filter" className="w-5 h-5" />
               <span>Filter</span>
             </button>
           </div>
@@ -351,8 +351,8 @@ export default function CampaignsPage() {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
           <div className="bg-white p-6 rounded-lg shadow">
             <div className="flex items-center">
-              <div className="p-2 bg-blue-100 rounded-lg">
-                <span className="text-blue-600 text-xl">📊</span>
+              <div className="p-2 bg-blue-100 rounded-lg flex items-center justify-center">
+                <img src="/icons/chart.png" alt="Total Campaigns" className="w-7 h-7" />
               </div>
               <div className="ml-4">
                 <p className="text-sm font-medium text-gray-500">Total Campaigns</p>
@@ -363,8 +363,8 @@ export default function CampaignsPage() {
 
           <div className="bg-white p-6 rounded-lg shadow">
             <div className="flex items-center">
-              <div className="p-2 bg-green-100 rounded-lg">
-                <span className="text-green-600 text-xl">▶️</span>
+              <div className="p-2 bg-green-100 rounded-lg flex items-center justify-center">
+                <img src="/icons/start.png" alt="Active" className="w-7 h-7" />
               </div>
               <div className="ml-4">
                 <p className="text-sm font-medium text-gray-500">Active</p>
@@ -377,8 +377,8 @@ export default function CampaignsPage() {
 
           <div className="bg-white p-6 rounded-lg shadow">
             <div className="flex items-center">
-              <div className="p-2 bg-yellow-100 rounded-lg">
-                <span className="text-yellow-600 text-xl">⏸️</span>
+              <div className="p-2 bg-yellow-100 rounded-lg flex items-center justify-center">
+                <img src="/icons/pause.png" alt="Paused" className="w-7 h-7" />
               </div>
               <div className="ml-4">
                 <p className="text-sm font-medium text-gray-500">Paused</p>
@@ -391,8 +391,8 @@ export default function CampaignsPage() {
 
           <div className="bg-white p-6 rounded-lg shadow">
             <div className="flex items-center">
-              <div className="p-2 bg-purple-100 rounded-lg">
-                <span className="text-purple-600 text-xl">👥</span>
+              <div className="p-2 bg-purple-100 rounded-lg flex items-center justify-center">
+                <img src="/icons/users.png" alt="Total Leads" className="w-7 h-7" />
               </div>
               <div className="ml-4">
                 <p className="text-sm font-medium text-gray-500">Total Leads</p>
@@ -425,7 +425,9 @@ export default function CampaignsPage() {
           </div>
         ) : filteredCampaigns.length === 0 ? (
           <div className="bg-white rounded-lg shadow p-12 text-center">
-            <div className="text-gray-400 text-6xl mb-4">📊</div>
+            <div className="mb-4 flex justify-center">
+              <img src="/icons/chart.png" alt="No Campaigns" className="w-16 h-16 text-gray-400" />
+            </div>
             <h3 className="text-lg font-medium text-gray-900 mb-2">No campaigns found</h3>
             <p className="text-gray-500 mb-6">
               {searchTerm || filterStatus !== 'all' 

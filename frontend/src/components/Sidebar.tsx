@@ -29,8 +29,15 @@ export default function Sidebar() {
     <div className="w-64 bg-white min-h-screen border-r border-gray-200 flex flex-col">
       {/* Logo */}
       <div className="p-6 border-b border-gray-200">
-        <h1 className="text-2xl font-bold text-gray-900">AI Sales Agents</h1>
-        <p className="text-sm text-gray-500 mt-1">24/7 AI Sales Team</p>
+      <div className="flex justify-center">
+            <img
+              src="/logo.png"
+              alt="AI Sales Agents Logo"
+              className="w-32 h-32 object-contain"
+            />
+          </div>
+        <h1 className="text-2xl font-bold text-gray-900 text-center">AI Sales Agents</h1>
+        <p className="text-sm text-gray-500 mt-1 text-center">24/7 AI Sales Team</p>
       </div>
 
       {/* Navigation */}
