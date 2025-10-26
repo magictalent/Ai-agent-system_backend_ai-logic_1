@@ -1,9 +1,14 @@
 import type { Metadata } from 'next'
-import { Inter } from 'next/font/google'
+// import { Inter } from 'next/font/google'
 import './globals.css'
 import { AuthProvider } from '@/contexts/AuthContext'
+import { Lexend_Deca } from 'next/font/google'
 
-const inter = Inter({ subsets: ['latin'] })
+// const inter = Inter({ subsets: ['latin'] })
+const lexendDeca = Lexend_Deca({
+  subsets: ['latin'],
+  weight: ['400', '500', '700'], // optional, choose what you need
+})
 
 export const metadata: Metadata = {
   title: 'AI Sales Agents - Dashboard',
@@ -17,11 +22,11 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-    <body className={inter.className}>
-      <AuthProvider>
-        {children}
-      </AuthProvider>
-    </body>
-  </html>
+      <body className={lexendDeca.className}>
+        <AuthProvider>
+          {children}
+        </AuthProvider>
+      </body>
+    </html>
   )
 }

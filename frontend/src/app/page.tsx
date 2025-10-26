@@ -11,7 +11,7 @@ const CAROUSEL_SLIDES = [
     img: "/carousel1.png",
     alt: "Testimonial Image 1",
     colorClass: "text-blue-700",
-    imgClass: "w-40 h-40 md:w-56 md:h-56 mx-auto object-contain",
+    imgClass: "w-40 h-40 md:w-56 md:h-56 mx-auto object-contain", // removed shadow class if present
     heading: (
       <span className="block text-center">{`"We booked 30+ calls our first week!"`}</span>
     ),
@@ -26,7 +26,7 @@ const CAROUSEL_SLIDES = [
     img: "/carousel2.png",
     alt: "Testimonial Image 2",
     colorClass: "text-green-700",
-    imgClass: "w-40 h-40 md:w-56 md:h-56 mx-auto object-contain",
+    imgClass: "w-40 h-40 md:w-56 md:h-56 mx-auto object-contain", // removed shadow class if present
     heading: (
       <span className="block text-center">{`"Never miss a lead again."`}</span>
     ),
@@ -41,7 +41,7 @@ const CAROUSEL_SLIDES = [
     img: "/carousel3.png",
     alt: "Testimonial Image 3",
     colorClass: "text-purple-700",
-    imgClass: "w-40 h-40 md:w-56 md:h-56 mx-auto object-contain",
+    imgClass: "w-40 h-40 md:w-56 md:h-56 mx-auto object-contain", // removed shadow class if present
     heading: (
       <span className="block text-center">{`"Game-changer for our sales funnel."`}</span>
     ),
@@ -56,7 +56,7 @@ const CAROUSEL_SLIDES = [
     img: "/carousel4.png",
     alt: "Testimonial Image 4",
     colorClass: "text-pink-700",
-    imgClass: "w-40 h-40 md:w-56 md:h-56 mx-auto object-contain",
+    imgClass: "w-40 h-40 md:w-56 md:h-56 mx-auto object-contain", // removed shadow class if present
     heading: (
       <span className="block text-center">{`"Set up in minutes and already seeing results."`}</span>
     ),
@@ -71,7 +71,7 @@ const CAROUSEL_SLIDES = [
     img: "/carousel5.png",
     alt: "Testimonial Image 5",
     colorClass: "text-yellow-700",
-    imgClass: "w-40 h-40 md:w-56 md:h-56 mx-auto object-contain",
+    imgClass: "w-40 h-40 md:w-56 md:h-56 mx-auto object-contain", // removed shadow class if present
     heading: (
       <span className="block text-center">{`"Our sales team loves their new AI assistant."`}</span>
     ),
@@ -86,7 +86,7 @@ const CAROUSEL_SLIDES = [
     img: "/carousel6.png",
     alt: "Testimonial Image 6",
     colorClass: "text-cyan-700",
-    imgClass: "w-40 h-40 md:w-56 md:h-56 mx-auto object-contain",
+    imgClass: "w-40 h-40 md:w-56 md:h-56 mx-auto object-contain", // removed shadow class if present
     heading: (
       <span className="block text-center">{`"AI handles thousands of messages per week."`}</span>
     ),
@@ -241,7 +241,7 @@ function AnimatedCarousel() {
               <img
                 src={slide.img}
                 alt={slide.alt}
-                className="mx-auto mb-8 rounded-2xl shadow-lg w-full max-w-[600px] object-cover transform transition-transform duration-500 hover:scale-105"
+                className="mx-auto mb-8 rounded-2xl w-full max-w-[600px] object-cover transform transition-transform duration-500 hover:scale-105"
                 style={{ height: 330 }}
                 draggable={false}
               />
@@ -304,8 +304,11 @@ export default function Home() {
           backgroundImage: "url('/background2.png')",
           backgroundSize: 'cover',
           backgroundPosition: 'center',
+          backgroundRepeat: 'no-repeat',
+          backgroundAttachment: 'scroll',
+          backgroundPositionY: '6rem' // Move bg down (~navbar height)
         }}>
-        <div className="relative z-10 min-h-[95vh] flex flex-col">
+        <div className="relative z-10 min-h-[150vh] flex flex-col">
           {/* Navbar */}
           <nav className="bg-white shadow-sm sticky top-0 z-50">
             <div className="max-w-7xl mx-auto px-6 py-3 flex justify-between items-center">
@@ -426,13 +429,13 @@ export default function Home() {
       {/* ----- END PART 1 ----- */}
 
       {/* ----- PART 2: FEATURES ----- */}
-      <section className="max-w-7xl mx-auto px-6 pb-24 pt-16">
+      <section className="max-w-7xl mx-auto px-6 pb-24 pt-16 h-250">
         <div className="flex flex-col md:flex-row items-center gap-12">
           {/* Lottie Animation */}
           <div className="flex-1 flex justify-center items-center mb-10 md:mb-0">
             <div className="w-[380px] h-[380px] sm:w-[480px] sm:h-[480px] md:w-[560px] md:h-[560px] rounded-3xl  overflow-hidden from-blue-50 via-indigo-50 to-white">
               <DotLottieReact
-                src="https://lottie.host/972f5692-c538-4c9d-8b49-a95f962d21e3/ET4TOwMNEM.lottie"
+                src="https://lottie.host/25cb95ed-b8ec-4f93-8338-7dffc4fb5ff4/x7F4Il0bA2.lottie"
                 loop
                 autoplay
               />
@@ -467,11 +470,146 @@ export default function Home() {
       {/* ----- END PART 2 ----- */}
 
       {/* ----- PART 3: CAROUSEL (with animated transitions) ----- */}
-      <section className="max-w-3xl mx-auto mb-20">
-        <h2 className="text-3xl font-bold text-center mb-8">What Our Clients Are Saying</h2>
-        <p>Connected data and tools make it easier to know, do, and connect everything across your business.</p>
-        <AnimatedCarousel />
+      <section
+        className="w-full mb-20 py-16"
+        style={{
+          background: "linear-gradient(135deg, #FFE5B4 0%, #F3D5A7FF 60%, #EB74D1FF 100%)",
+        }}
+      >
+        <div className="max-w-3xl mx-auto px-6">
+          <h2 className="text-3xl font-bold text-center mb-8 text-black drop-shadow">
+            What Our Clients Are Saying
+          </h2>
+          <p className="text-center mb-6 drop-shadow text-black">
+            Connected data and tools make it easier to know, do, and connect everything across your business.
+          </p>
+          <AnimatedCarousel />
+        </div>
       </section>
+    
+      <section className="max-w-7xl mx-auto px-6 py-20 flex flex-col md:flex-row gap-10">
+        {/* Left Side: Lottie + Text */}
+        <div className="md:w-2/5 w-full flex flex-col items-start sticky top-28 self-start">
+          <div className="w-full flex flex-col gap-6">
+            <div className="w-28 mb-2">
+              {/* Optional: Powered by or similar small label */}
+              <span className="inline-flex items-center bg-orange-50 text-orange-500 rounded-full px-6 py-1 text-xs font-semibold whitespace-nowrap">
+                <svg width="20" height="20" fill="none" className="mr-2" viewBox="0 0 16 16"><circle cx="8" cy="8" r="8" fill="#FF7A59"/></svg>Powered by AI
+              </span>
+            </div>
+            <h2 className="text-3xl md:text-4xl font-bold leading-tight mb-4">
+              Growing a business is hard.<br />
+              <span className="text-orange-500">AI Sales Agents</span> make it easier.
+            </h2>
+            <p className="text-gray-700 mb-4">
+              Our connected tools and AI sales agents drive growth.<br />
+              Multi-channel outreach, smart analytics, and always-on nurturing make growing your revenue easier than ever.
+            </p>
+            
+          </div>
+          {/* Lottie Animation (Sticky) */}
+          <div className="w-full flex justify-center mt-8">
+            <div className="w-64 h-64 md:w-80 md:h-80">
+              <DotLottieReact
+                src="https://lottie.host/3fa7c7ce-2d46-458f-a619-1491308f9e52/ZBaDtASLz5.lottie"
+                loop
+                autoplay
+                style={{ width: '100%', height: '100%' }}
+              />
+            </div>
+            
+          </div>
+          <div className="w-full flex justify-center">
+            <button className="bg-orange-500 hover:bg-orange-600 text-white px-6 py-3 rounded-lg font-bold shadow-md transition mb-6 text-center">
+              Get a demo
+            </button>
+          </div>
+        </div>
+        {/* Right Side: Product/Hub Cards */}
+        <div className="md:w-3/5 w-full grid grid-cols-1 sm:grid-cols-2 gap-6">
+          {/* Card 1 */}
+          <div className="border rounded-xl p-6 shadow hover:shadow-lg bg-white transition flex flex-col gap-3">
+            <div className="flex items-center gap-3 mb-1">
+              <img src="/icons/marketing.png" alt="Marketing icon" className="w-10 h-10"/>
+              <span className="text-lg font-semibold text-orange-500">Lead Nurturing</span>
+            </div>
+            <ul className="text-gray-700 text-sm pl-5 list-disc">
+              <li>Automated responses for new leads 24/7</li>
+              <li>Timely follow-ups across channels</li>
+              <li>Book more qualified calls</li>
+            </ul>
+            <a href="#" className="text-orange-500 hover:underline text-xs font-semibold mt-2 ml-auto">Learn more &rarr;</a>
+          </div>
+
+          <div className="border rounded-xl p-6 shadow hover:shadow-lg bg-white transition flex flex-col gap-3">
+            <div className="flex items-center gap-3 mb-1">
+              <img src="/icons/analytics.png" alt="Analytics icon" className="w-10 h-10"/>
+              <span className="text-lg font-semibold text-blue-600">Smart Analytics</span>
+            </div>
+            <ul className="text-gray-700 text-sm pl-5 list-disc">
+              <li>Track engagement and conversion rates</li>
+              <li>Identify bottlenecks in your sales funnel</li>
+              <li>Custom, actionable reports</li>
+            </ul>
+            <a href="#" className="text-blue-600 hover:underline text-xs font-semibold mt-2 ml-auto">Learn more &rarr;</a>
+          </div>
+
+          <div className="border rounded-xl p-6 shadow hover:shadow-lg bg-white transition flex flex-col gap-3">
+            <div className="flex items-center gap-3 mb-1">
+              <img src="/icons/automation.png" alt="Automation icon" className="w-10 h-10"/>
+              <span className="text-lg font-semibold text-violet-600">Workflow Automation</span>
+            </div>
+            <ul className="text-gray-700 text-sm pl-5 list-disc">
+              <li>Automate repetitive sales tasks</li>
+              <li>Integrate with your CRM & tools</li>
+              <li>Free up time for your best closers</li>
+            </ul>
+            <a href="#" className="text-violet-600 hover:underline text-xs font-semibold mt-2 ml-auto">Learn more &rarr;</a>
+          </div>
+
+          <div className="border rounded-xl p-6 shadow hover:shadow-lg bg-white transition flex flex-col gap-3">
+            <div className="flex items-center gap-3 mb-1">
+              <img src="/icons/conversation.png" alt="Conversation icon" className="w-10 h-10"/>
+              <span className="text-lg font-semibold text-fuchsia-600">Omnichannel Outreach</span>
+            </div>
+            <ul className="text-gray-700 text-sm pl-5 list-disc">
+              <li>Connect with leads via SMS, WhatsApp, & Email</li>
+              <li>Consistent messaging across all channels</li>
+              <li>Maximize your reach automatically</li>
+            </ul>
+            <a href="#" className="text-fuchsia-600 hover:underline text-xs font-semibold mt-2 ml-auto">Learn more &rarr;</a>
+          </div>
+          {/* Card 2 */}
+          <div className="border rounded-xl p-6 shadow hover:shadow-lg bg-white transition flex flex-col gap-3">
+            <div className="flex items-center gap-3 mb-1">
+              <img src="/icons/sales.png" alt="Sales icon" className="w-10 h-10"/>
+              <span className="text-lg font-semibold text-green-500">Sales Automation</span>
+            </div>
+            <ul className="text-gray-700 text-sm pl-5 list-disc">
+              <li>AI agents qualify, schedule, and follow up</li>
+              <li>Never let a hot lead go cold</li>
+              <li>CRM integration for streamlined pipeline</li>
+            </ul>
+            <a href="#" className="text-green-600 hover:underline text-xs font-semibold mt-2 ml-auto">Learn more &rarr;</a>
+          </div>
+          {/* Card 3 */}
+          <div className="border rounded-xl p-6 shadow hover:shadow-lg bg-white transition flex flex-col gap-3">
+            <div className="flex items-center gap-3 mb-1">
+              <img src="/icons/support.png" alt="Support icon" className="w-10 h-10"/>
+              <span className="text-lg font-semibold text-orange-500">AI Support Agents</span>
+            </div>
+            <ul className="text-gray-700 text-sm pl-5 list-disc">
+              <li>24/7 instant responses for your customers</li>
+              <li>Automated FAQs and troubleshooting</li>
+              <li>Reduce response times and workload</li>
+            </ul>
+            <a href="#" className="text-orange-600 hover:underline text-xs font-semibold mt-2 ml-auto">See AI Support in Action &rarr;</a>
+          </div>
+{/* Card 4 */}
+          
+          </div>
+          </section>
+                 
       {/* ----- PART 4: FOOTER ----- */}
       <footer className="bg-[#23272a] text-gray-200 pt-14 pb-7 px-5 mt-8">
         <div className="max-w-7xl mx-auto">
