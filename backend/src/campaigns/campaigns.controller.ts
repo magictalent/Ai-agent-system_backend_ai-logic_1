@@ -1,6 +1,7 @@
 import { Controller, Get, Post, Put, Delete, Body, Param, UseGuards, Request } from '@nestjs/common';
 import { CampaignsService } from './campaigns.service';
 import { AiCampaignService } from './ai-campaign.service';
+import { ClientsService } from '../clients/clients.service';
 import { SupabaseAuthGuard } from '../auth/supabase-auth.guard';
 import type { CreateCampaignData } from './campaign.interface';
 
@@ -9,7 +10,8 @@ import type { CreateCampaignData } from './campaign.interface';
 export class CampaignsController {
   constructor(
     private readonly campaignsService: CampaignsService,
-    private readonly aiCampaignService: AiCampaignService
+    private readonly aiCampaignService: AiCampaignService,
+    private readonly clientsService: ClientsService
   ) {}
 
   @Get()
@@ -80,6 +82,54 @@ export class CampaignsController {
   async getAiStatus(@Param('id') id: string, @Request() req) {
     const userId = req.user.id;
     return await this.aiCampaignService.getAiCampaignStatus(id, userId);
+  }
+
+  @Get(':id/test-leads')
+  async testLeads(@Param('id') id: string, @Request() req) {
+    const userId = req.user.id;
+    console.log('🧪 Testing leads for campaign:', id);
+    
+    try {
+      // Get campaign details
+      const campaign = await this.campaignsService.getCampaignById(id, userId);
+      if (!campaign) {
+        throw new Error('Campaign not found');
+      }
+
+      // Get client details
+      const client = await this.clientsService.getClientById(campaign.client_id, userId);
+      if (!client) {
+        throw new Error('Client not found');
+      }
+
+      console.log('📊 Campaign details:', {
+        id: campaign.id,
+        name: campaign.name,
+        client_id: campaign.client_id,
+        client_name: client.name,
+        crm_provider: client.crm_provider
+      });
+
+      // Test lead fetching
+      const leads = await this.aiCampaignService.testLeadFetching(client.id, userId);
+      
+      return {
+        campaign: {
+          id: campaign.id,
+          name: campaign.name,
+          client_id: campaign.client_id
+        },
+        client: {
+          id: client.id,
+          name: client.name,
+          crm_provider: client.crm_provider
+        },
+        leads: leads
+      };
+    } catch (error) {
+      console.error('❌ Error testing leads:', error);
+      throw error;
+    }
   }
 
   @Put(':id')

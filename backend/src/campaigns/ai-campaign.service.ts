@@ -97,6 +97,39 @@ export class AiCampaignService {
     }
   }
 
+  async testLeadFetching(clientId: string, userId: string) {
+    console.log('🧪 Testing lead fetching for client:', clientId);
+    
+    try {
+      // Get client details
+      const client = await this.clientsService.getClientById(clientId, userId);
+      if (!client) {
+        throw new Error('Client not found');
+      }
+
+      console.log('📊 Client details:', {
+        id: client.id,
+        name: client.name,
+        crm_provider: client.crm_provider
+      });
+
+      // Test CRM connection
+      const leads = await this.aiService.getClientLeads(clientId, userId);
+      
+      console.log('📊 Lead fetch result:', {
+        total: leads.total,
+        leads_count: leads.leads.length,
+        crm_provider: leads.crm,
+        client_name: leads.client
+      });
+
+      return leads;
+    } catch (error) {
+      console.error('❌ Error testing lead fetching:', error);
+      throw error;
+    }
+  }
+
   private async startWhatsAppAutomation(campaign: Campaign, client: any, userId: string) {
     console.log('📱 Starting WhatsApp automation for campaign:', campaign.name);
     
