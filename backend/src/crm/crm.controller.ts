@@ -1,9 +1,22 @@
 import { Controller, Get, Post, Body, Query } from '@nestjs/common';
 import { CrmService } from './crm.service';
+import { Public } from '../auth/public.decorator';
 
 @Controller('crm')
 export class CrmController {
   constructor(private readonly crmService: CrmService) {}
+
+  @Public()
+  @Get('status')
+  async getStatus() {
+    return this.crmService.getProviderStatus();
+  }
+
+  @Public()
+  @Get('test')
+  async test(@Query('provider') provider: string) {
+    return this.crmService.testProvider(provider);
+  }
 
   @Get('leads')
   async getLeads(@Query('provider') provider: string) {

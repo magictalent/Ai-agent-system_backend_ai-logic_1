@@ -8,17 +8,33 @@ export class HubspotService {
 
   constructor() {
     const apiKey = process.env.HUBSPOT_API_KEY;
-    if (!apiKey) {
-      throw new Error('HUBSPOT_API_KEY environment variable is required');
-    }
-    this.apiKey = apiKey;
+    // Do not throw on startup if missing; fail lazily when used
+    this.apiKey = apiKey || '';
   }
 
   private getHeaders() {
+    if (!this.apiKey) {
+      throw new HttpException('HUBSPOT_API_KEY is not configured', HttpStatus.BAD_REQUEST);
+    }
     return {
       'Authorization': `Bearer ${this.apiKey}`,
       'Content-Type': 'application/json',
     };
+  }
+
+  async testConnection() {
+    try {
+      // Perform a minimal request using the PAT; if unauthorized, this will fail
+      const contacts = await axios.get(
+        `${this.baseUrl}/crm/v3/objects/contacts`,
+        { headers: this.getHeaders(), params: { limit: 1, properties: 'email' } }
+      );
+      return { ok: true, sample: contacts.data?.results?.length ?? 0 };
+    } catch (error: any) {
+      const status = error?.response?.status;
+      const message = error?.response?.data || error?.message;
+      return { ok: false, status, message };
+    }
   }
 
   async getLeads() {

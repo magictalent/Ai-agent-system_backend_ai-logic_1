@@ -9,6 +9,23 @@ export class CrmService {
     private readonly hubspot: HubspotService,
   ) {}
 
+  getProviderStatus() {
+    return {
+      mock: { id: 'mock', connected: true },
+      hubspot: { id: 'hubspot', connected: !!process.env.HUBSPOT_API_KEY },
+    };
+  }
+
+  async testProvider(provider: string) {
+    switch (provider) {
+      case 'hubspot':
+        return this.hubspot.testConnection();
+      case 'mock':
+      default:
+        return { ok: true };
+    }
+  }
+
   async getLeads(provider: string, token?: string) {
     switch (provider) {
       case 'hubspot':

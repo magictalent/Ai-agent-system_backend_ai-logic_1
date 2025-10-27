@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import Image from 'next/image'
 import { CreateClientData, CRMProvider } from '@/types/client'
 
@@ -10,7 +10,7 @@ interface AddClientModalProps {
   onSubmit: (clientData: CreateClientData) => Promise<void>
 }
 
-const crmProviders: CRMProvider[] = [
+const BASE_PROVIDERS: CRMProvider[] = [
   {
     id: 'hubspot',
     name: 'HubSpot',
@@ -58,6 +58,26 @@ export default function AddClientModal({ isOpen, onClose, onSubmit }: AddClientM
   })
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [providers, setProviders] = useState<CRMProvider[]>(BASE_PROVIDERS)
+
+  // Fetch CRM provider connection status from backend when modal opens
+  useEffect(() => {
+    const fetchStatus = async () => {
+      try {
+        const res = await fetch('http://localhost:3001/crm/status')
+        if (res.ok) {
+          const status = await res.json()
+          setProviders(prev => prev.map(p => ({
+            ...p,
+            connected: status[p.id]?.connected ?? p.connected,
+          })))
+        }
+      } catch (e) {
+        // ignore; keep defaults
+      }
+    }
+    if (isOpen) fetchStatus()
+  }, [isOpen])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -181,7 +201,7 @@ export default function AddClientModal({ isOpen, onClose, onSubmit }: AddClientM
                 CRM Provider *
               </label>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                {crmProviders.map((provider) => (
+                {providers.map((provider) => (
                   <label
                     key={provider.id}
                     className={`relative flex items-center p-4 border rounded-lg cursor-pointer transition-colors ${
