@@ -10,6 +10,7 @@ import { MessagesModule } from './messages/messages.module';
 import { GmailService } from './integrations/gmail.service';
 import { CalendarService } from './integrations/calendar.service';
 import { IntegrationsModule } from './integrations/integrations.module';
+import { SequencesModule } from './sequences/sequences.module';
 import { SupabaseModule } from './supabase/supabase.module';
 import { SupabaseAuthGuard } from './auth/supabase-auth.guard';
 
@@ -27,6 +28,7 @@ import { SupabaseAuthGuard } from './auth/supabase-auth.guard';
     CampaignsModule,
     MessagesModule,
     IntegrationsModule,
+    SequencesModule,
   ],
   providers: [
     GmailService, 

@@ -47,10 +47,19 @@ export default function IntegrationsPage() {
   }
 
   const previewLeads = async () => {
+    if (!token) {
+      setMessage('Please log in to preview contacts')
+      return
+    }
     setMessage('')
     setLeadPreview(null)
     try {
-      const res = await fetch('http://localhost:3001/crm/leads?provider=hubspot')
+      const res = await fetch('http://localhost:3001/crm/leads?provider=hubspot', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      })
       if (!res.ok) {
         const txt = await res.text()
         throw new Error(txt)
@@ -140,4 +149,3 @@ export default function IntegrationsPage() {
     </div>
   )
 }
-
