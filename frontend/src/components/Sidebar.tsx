@@ -1,25 +1,14 @@
 'use client'
 
-import {
-  LayoutDashboard,
-  Users,
-  Megaphone,
-  Calendar,
-  Settings,
-  Plus,
-  MessageCircle
-} from 'lucide-react'
+import { LayoutDashboard, Megaphone } from 'lucide-react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 
 const menuItems = [
   { icon: LayoutDashboard, label: 'Dashboard', href: '/dashboard' },
-  { icon: Users, label: 'Clients', href: '/clients' },
-  { icon: Users, label: 'Leads', href: '/leads' },
-  { icon: MessageCircle, label: 'Messages', href: '/messages' },
   { icon: Megaphone, label: 'Campaigns', href: '/campaigns' },
-  { icon: Calendar, label: 'Calendar', href: '/calendar' },
-  { icon: Settings, label: 'Settings', href: '/settings' },
+  { icon: Megaphone, label: 'Integrations', href: '/integrations' },
+  { icon: Megaphone, label: 'Analytics', href: '/analytics' },
 ]
 
 export default function Sidebar() {
@@ -95,13 +84,8 @@ export default function Sidebar() {
         </ul>
       </nav>
 
-      {/* New Client Button */}
-      <div className="px-5 pb-7 pt-2 mt-auto border-t border-[#5A314F] bg-[#341730]">
-        <button className="w-full bg-[#BA3C92] hover:bg-[#C844A9] text-white py-3 rounded-md font-semibold flex items-center justify-center gap-2 text-base transition active:scale-95 shadow">
-          <Plus size={20} />
-          <span>New Client</span>
-        </button>
-      </div>
+      {/* Footer space */}
+      <div className="px-5 pb-7 pt-2 mt-auto border-t border-[#5A314F] bg-[#341730]" />
     </aside>
   )
 }

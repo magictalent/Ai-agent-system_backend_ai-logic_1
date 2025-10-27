@@ -1,7 +1,8 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Campaign, CHANNEL_CONFIGS, STATUS_CONFIGS } from '@/types/campaign'
+import { useAuth } from '@/contexts/AuthContext'
 
 interface CampaignCardProps {
   campaign: Campaign
@@ -13,6 +14,33 @@ interface CampaignCardProps {
 
 export default function CampaignCard({ campaign, onEdit, onStart, onPause, onStop }: CampaignCardProps) {
   const [showActions, setShowActions] = useState(false)
+  const { token } = useAuth()
+  const [showSequence, setShowSequence] = useState(false)
+  const [leadEmail, setLeadEmail] = useState('')
+  const [queue, setQueue] = useState<any[]>([])
+  const [loadingQueue, setLoadingQueue] = useState(false)
+  const [starting, setStarting] = useState(false)
+  const [seqMsg, setSeqMsg] = useState('')
+
+  const loadQueue = async () => {
+    if (!token) return
+    try {
+      setLoadingQueue(true)
+      const items = await loadQueueInternal(campaign.id, token)
+      setQueue(items)
+    } catch (e) {
+      // ignore for now
+    } finally {
+      setLoadingQueue(false)
+    }
+  }
+
+  useEffect(() => {
+    if (showSequence) {
+      loadQueue()
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [showSequence])
 
   const channelConfig = CHANNEL_CONFIGS.find(c => c.id === campaign.channel)
   const statusConfig = STATUS_CONFIGS[campaign.status]
@@ -173,7 +201,146 @@ export default function CampaignCard({ campaign, onEdit, onStart, onPause, onSto
           <img src="/icons/edit.png" alt="Edit" className="w-5 h-5" />
           <span>Edit</span>
         </button>
+        <button
+          onClick={() => setShowSequence(s => !s)}
+          className="flex items-center space-x-2 px-4 py-2 bg-indigo-100 text-indigo-800 rounded-lg hover:bg-indigo-200 transition-colors"
+        >
+          <img src="/icons/start.png" alt="Seq" className="w-5 h-5" />
+          <span>Sequence</span>
+        </button>
       </div>
+
+      {showSequence && (
+        <div className="mt-4 border-t pt-4">
+          <h4 className="font-semibold text-gray-900 mb-2">Start Sequence</h4>
+          <div className="flex flex-col sm:flex-row gap-2 items-start sm:items-end">
+            <div className="flex-1">
+              <label className="block text-sm text-gray-600 mb-1">Lead Email</label>
+              <input
+                type="email"
+                value={leadEmail}
+                onChange={(e) => setLeadEmail(e.target.value)}
+                placeholder="lead@example.com"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+            <button
+              onClick={async () => {
+                setSeqMsg('')
+                if (!token) { setSeqMsg('Please log in'); return }
+                if (!leadEmail) { setSeqMsg('Enter a lead email'); return }
+                try {
+                  setStarting(true)
+                  const res = await fetch('http://localhost:3001/sequences/start', {
+                    method: 'POST',
+                    headers: {
+                      'Authorization': `Bearer ${token}`,
+                      'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                      clientId: campaign.client_id,
+                      campaignId: campaign.id,
+                      leadEmail,
+                      channel: 'email',
+                    })
+                  })
+                  const data = await res.json()
+                  if (!res.ok) throw new Error(data?.message || 'Failed to start sequence')
+                  setSeqMsg(`Queued ${data.created} steps`)
+                  // refresh queue
+                  await loadQueue()
+                } catch (e: any) {
+                  setSeqMsg(e.message)
+                } finally {
+                  setStarting(false)
+                }
+              }}
+              disabled={starting}
+              className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50"
+            >
+              {starting ? 'Starting…' : 'Start'}
+            </button>
+          </div>
+          {seqMsg && <div className="text-sm text-gray-700 mt-2">{seqMsg}</div>}
+
+          <div className="mt-4">
+          <div className="flex items-center justify-between mb-2">
+            <h5 className="font-medium text-gray-800">Queued Steps</h5>
+            <button
+              onClick={async () => { await loadQueue() }}
+              className="text-sm px-3 py-1 bg-gray-100 rounded hover:bg-gray-200"
+            >
+              Refresh
+            </button>
+          </div>
+          <div className="flex gap-2 mb-2">
+            <button
+              onClick={() => {
+                window.location.href = `http://localhost:3001/google/auth/login?clientId=${campaign.client_id}`
+              }}
+              className="text-sm px-3 py-1 bg-blue-100 text-blue-800 rounded hover:bg-blue-200"
+            >
+              Connect Gmail for Client
+            </button>
+            <button
+              onClick={async () => {
+                if (!token) { setSeqMsg('Please log in'); return }
+                try {
+                  const res = await fetch('http://localhost:3001/sequences/tick', {
+                    method: 'POST',
+                    headers: {
+                      'Authorization': `Bearer ${token}`,
+                      'Content-Type': 'application/json',
+                    },
+                  })
+                  const data = await res.json()
+                  setSeqMsg(`Tick processed ${data.processed} items`)
+                  await loadQueue()
+                } catch (e: any) {
+                  setSeqMsg(e.message)
+                }
+              }}
+              className="text-sm px-3 py-1 bg-green-100 text-green-800 rounded hover:bg-green-200"
+            >
+              Run Tick
+            </button>
+          </div>
+            <div className="space-y-2">
+              {loadingQueue && <div className="text-sm text-gray-500">Loading…</div>}
+              {!loadingQueue && queue.length === 0 && (
+                <div className="text-sm text-gray-500">No queued steps</div>
+              )}
+              {queue.map((q) => (
+                <div key={q.id} className="text-sm text-gray-700 bg-gray-50 p-2 rounded flex justify-between">
+                  <div>
+                    <div className="font-medium">{q.subject || '(no subject)'}</div>
+                    <div className="text-xs text-gray-500">{q.channel} • due {new Date(q.due_at).toLocaleString()}</div>
+                  </div>
+                  <span className={`text-xs px-2 py-1 rounded ${q.status === 'pending' ? 'bg-yellow-100 text-yellow-800' : q.status === 'sent' ? 'bg-green-100 text-green-800' : q.status === 'cancelled' ? 'bg-gray-100 text-gray-800' : 'bg-red-100 text-red-800' }`}>
+                    {q.status}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
+}
+
+async function loadQueueInternal(campaignId: string, token: string) {
+  const res = await fetch('http://localhost:3001/sequences/queue', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ campaignId, limit: 5 })
+  })
+  if (!res.ok) {
+    const txt = await res.text()
+    throw new Error(txt)
+  }
+  return await res.json()
 }

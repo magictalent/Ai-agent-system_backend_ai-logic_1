@@ -9,7 +9,7 @@ CREATE TABLE sequence_queue (
   campaign_id uuid NOT NULL,
   client_id text NOT NULL,
   lead_id text NOT NULL,
-  channel text NOT NULL CHECK (channel IN ('email', 'sms', 'whatsapp')),
+  channel text NOT NULL CHECK (channel IN ('email')),
   subject text,
   content text NOT NULL,
   due_at timestamptz NOT NULL,
@@ -50,4 +50,3 @@ CREATE INDEX idx_sequence_queue_campaign ON sequence_queue(campaign_id);
 CREATE INDEX idx_sequence_queue_lead ON sequence_queue(lead_id);
 CREATE INDEX idx_sequence_queue_due ON sequence_queue(due_at);
 CREATE INDEX idx_sequence_queue_status ON sequence_queue(status);
-

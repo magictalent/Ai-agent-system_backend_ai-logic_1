@@ -217,13 +217,31 @@ export default function Login() {
               <div className="w-full border-t border-gray-300" />
             </div>
             <div className="relative flex justify-center text-sm">
-              <span className="px-2 bg-white text-gray-500">Demo Credentials</span>
+              <span className="px-2 bg-white text-gray-500">Or continue with</span>
             </div>
           </div>
-          
-          <div className="mt-4 text-center text-sm text-gray-600 space-y-1">
-            <p>Email: demo@aisales.com</p>
-            <p>Password: demo123</p>
+          <div className="mt-4">
+            <button
+              onClick={async () => {
+                try {
+                  const { data, error } = await supabase.auth.signInWithOAuth({
+                    provider: 'google',
+                    options: {
+                      redirectTo: typeof window !== 'undefined' ? `${window.location.origin}/dashboard` : undefined,
+                    },
+                  })
+                  if (error) throw error
+                } catch (e: any) {
+                  setError(e.message || 'Google sign-in failed')
+                }
+              }}
+              className="w-full border border-gray-300 rounded-lg py-3 flex items-center justify-center gap-2 hover:bg-gray-50"
+              type="button"
+            >
+              <img src="/icons/google.png" alt="Google" className="w-5 h-5" />
+              <span className="text-gray-700">Continue with Google</span>
+            </button>
+            <p className="text-xs text-gray-500 mt-2 text-center">This signs you into the dashboard. For Gmail sending, connect Gmail in Integrations or from a Campaign.</p>
           </div>
         </div>
       </div>

@@ -1,117 +1,107 @@
-'use client'
+"use client"
 
-import StatsCards from '../../components/StatsCards'
-import CampaignsTable from '../../components/CampaignsTable'
-import { DotLottieReact } from '@lottiefiles/dotlottie-react'
+import { useEffect, useMemo, useState } from 'react'
+import { useAuth } from '@/contexts/AuthContext'
+
+type Lead = { id: string; firstname: string; lastname: string; email: string }
 
 export default function Dashboard() {
+  const { token } = useAuth()
+  const [leads, setLeads] = useState<Lead[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
+
+  useEffect(() => {
+    const load = async () => {
+      try {
+        setLoading(true)
+        setError('')
+        const res = await fetch('http://localhost:3001/crm/leads?provider=hubspot', {
+          headers: { 'Authorization': `Bearer ${token || ''}` }
+        })
+        if (!res.ok) throw new Error(await res.text())
+        const data = await res.json()
+        setLeads(data || [])
+      } catch (e) {
+        setError((e as any).message)
+      } finally {
+        setLoading(false)
+      }
+    }
+    if (token) load()
+  }, [token])
+
+  const metrics = useMemo(() => ({
+    newLeads: leads.length,
+    activeConversations: 0,
+    bookedAppointments: 0,
+    conversionRate: 0,
+  }), [leads])
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-blue-50 to-white p-6 space-y-10">
-      {/* Header Section */}
-      <div className="flex flex-col lg:flex-row justify-between items-center bg-white rounded-2xl shadow-sm border border-gray-200 p-8">
-        {/* Left: Text + Buttons */}
-        <div>
-          <h1 className="text-3xl font-extrabold text-gray-900 flex items-center gap-3">
-            <span className="bg-gradient-to-r from-blue-600 to-indigo-600 text-transparent bg-clip-text">
-              Dashboard
-            </span>
-            <span className="text-sm font-semibold bg-blue-100 text-blue-700 px-2 py-1 rounded-md">
-              Live
-            </span>
-          </h1>
-          <p className="text-gray-600 mt-2 text-lg">
-            AI Sales Agents Performance Overview
-          </p>
+    <div className="min-h-screen bg-gray-50 p-6">
+      <h1 className="text-2xl font-bold text-gray-900 mb-6">Dashboard</h1>
 
-          <div className="flex space-x-4 mt-6">
-            <button className="bg-green-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-green-700 shadow transition">
-              Start New Campaign
-            </button>
-            <button className="bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-blue-700 shadow transition">
-              Import Leads
-            </button>
-          </div>
-        </div>
-
-        {/* Right: Lottie Animation */}
-        <div className="mt-8 lg:mt-0 w-60 h-60">
-          <DotLottieReact
-            src="https://lottie.host/6654e70f-b870-4dd9-a2e9-c9aaeeb68c5a/bn7Uf8UKdm.lottie"
-            loop
-            autoplay
-          />
-        </div>
+      {/* Metric cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+        <Metric title="New Leads" value={metrics.newLeads} />
+        <Metric title="Active Conversations" value={metrics.activeConversations} />
+        <Metric title="Booked Appointments" value={metrics.bookedAppointments} />
+        <Metric title="Conversion rate" value={`${metrics.conversionRate.toFixed(1)}%`} />
       </div>
 
-      {/* Quick Stats Section */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {/* Stat Card */}
-        <div className="bg-gradient-to-r from-blue-100 to-blue-50 border border-blue-200 rounded-2xl p-6 shadow-sm hover:shadow-md transition">
-          <div className="text-4xl font-bold text-blue-700 mb-1">1,247</div>
-          <div className="text-sm font-medium text-blue-600">Total Leads</div>
-        </div>
-
-        <div className="bg-gradient-to-r from-green-100 to-green-50 border border-green-200 rounded-2xl p-6 shadow-sm hover:shadow-md transition">
-          <div className="text-4xl font-bold text-green-700 mb-1">86</div>
-          <div className="text-sm font-medium text-green-600">Active Conversations</div>
-        </div>
-
-        <div className="bg-gradient-to-r from-purple-100 to-purple-50 border border-purple-200 rounded-2xl p-6 shadow-sm hover:shadow-md transition">
-          <div className="text-4xl font-bold text-purple-700 mb-1">42%</div>
-          <div className="text-sm font-medium text-purple-600">Avg. Response Rate</div>
-        </div>
-
-        <div className="bg-gradient-to-r from-orange-100 to-orange-50 border border-orange-200 rounded-2xl p-6 shadow-sm hover:shadow-md transition">
-          <div className="text-4xl font-bold text-orange-700 mb-1">23</div>
-          <div className="text-sm font-medium text-orange-600">Meetings This Week</div>
-        </div>
+      {/* Leads over time (placeholder sparkline) */}
+      <div className="bg-white rounded-lg border p-4 mb-6">
+        <div className="font-semibold text-gray-900 mb-2">Leads Over Time</div>
+        <svg viewBox="0 0 300 80" className="w-full h-24">
+          <polyline fill="none" stroke="#2563eb" strokeWidth="2"
+            points="0,70 30,60 60,68 90,50 120,55 150,45 180,52 210,48 240,42 270,30 300,36" />
+          {Array.from({ length: 11 }).map((_, i) => (
+            <circle key={i} cx={i * 30} cy={70 - Math.sin(i) * 20 - 10} r="3" fill="#60a5fa" />
+          ))}
+        </svg>
       </div>
 
-      {/* Stats + Agent Status */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <div className="lg:col-span-2">
-          <StatsCards />
-        </div>
-
-        {/* Agent Status */}
-        <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm hover:shadow-md transition">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-            <span className="text-blue-600">⚙️</span> AI Agent Status
-          </h3>
-
-          <div className="space-y-3">
-            {[
-              ['WhatsApp Agents', 'Online', 'green'],
-              ['Email Agents', 'Online', 'green'],
-              ['SMS Agents', 'Online', 'green'],
-              ['AI Response Engine', 'Active', 'blue'],
-            ].map(([label, status, color]) => (
-              <div key={label} className="flex justify-between items-center">
-                <span className="text-gray-700">{label}</span>
-                <span
-                  className={`px-2 py-1 rounded text-sm bg-${color}-100 text-${color}-800 font-medium`}
-                >
-                  {status}
-                </span>
-              </div>
-            ))}
-          </div>
-        </div>
+      {/* Recent leads */}
+      <div className="bg-white rounded-lg border p-4">
+        <div className="font-semibold text-gray-900 mb-3">Recent Leads</div>
+        {loading ? (
+          <div className="text-gray-600">Loading…</div>
+        ) : error ? (
+          <div className="text-red-600">{error}</div>
+        ) : (
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="text-left text-gray-500">
+                <th className="py-2">Name</th>
+                <th className="py-2">Status</th>
+                <th className="py-2">Last Activity</th>
+              </tr>
+            </thead>
+            <tbody>
+              {leads.slice(0, 6).map((l) => (
+                <tr key={l.id} className="border-t">
+                  <td className="py-2 text-gray-800">{l.firstname} {l.lastname}</td>
+                  <td className="py-2"><span className="px-2 py-1 rounded bg-gray-100 text-gray-700">New</span></td>
+                  <td className="py-2 text-gray-500">—</td>
+                </tr>
+              ))}
+              {leads.length === 0 && (
+                <tr><td className="py-3 text-gray-600" colSpan={3}>No leads yet. Connect your CRM and import.</td></tr>
+              )}
+            </tbody>
+          </table>
+        )}
       </div>
+    </div>
+  )
+}
 
-      {/* Campaigns Section */}
-      <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm hover:shadow-md transition">
-        <div className="flex justify-between items-center mb-6">
-          <h2 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
-            <span>📢</span> Active Campaigns
-          </h2>
-          <button className="text-blue-600 hover:text-blue-700 font-medium">
-            View All Campaigns →
-          </button>
-        </div>
-
-        <CampaignsTable />
-      </div>
+function Metric({ title, value }: { title: string; value: number | string }) {
+  return (
+    <div className="bg-white rounded-lg border p-4">
+      <div className="text-sm text-gray-500">{title}</div>
+      <div className="text-2xl font-bold text-gray-900 mt-1">{value}</div>
     </div>
   )
 }

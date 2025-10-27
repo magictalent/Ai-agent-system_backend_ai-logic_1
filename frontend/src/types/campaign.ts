@@ -33,41 +33,21 @@ export interface CampaignMetrics {
 }
 
 export interface ChannelConfig {
-  id: 'whatsapp' | 'email' | 'sms' | 'multi'
+  id: 'email'
   name: string
   icon: string
   color: string
   description: string
 }
 
+// UI limited to email channel only for now
 export const CHANNEL_CONFIGS: ChannelConfig[] = [
-  {
-    id: 'whatsapp',
-    name: 'WhatsApp',
-    icon: '💬',
-    color: 'bg-green-100 text-green-800',
-    description: 'Direct messaging via WhatsApp'
-  },
   {
     id: 'email',
     name: 'Email',
-    icon: '📧',
+    icon: '✉️',
     color: 'bg-blue-100 text-blue-800',
-    description: 'Email marketing campaigns'
-  },
-  {
-    id: 'sms',
-    name: 'SMS',
-    icon: '📱',
-    color: 'bg-purple-100 text-purple-800',
-    description: 'SMS text messaging'
-  },
-  {
-    id: 'multi',
-    name: 'Multi-Channel',
-    icon: '🔄',
-    color: 'bg-orange-100 text-orange-800',
-    description: 'Multiple communication channels'
+    description: 'Send via Gmail'
   }
 ]
 
@@ -77,3 +57,4 @@ export const STATUS_CONFIGS = {
   paused: { label: 'Paused', color: 'bg-yellow-100 text-yellow-800' },
   completed: { label: 'Completed', color: 'bg-blue-100 text-blue-800' }
 }
+

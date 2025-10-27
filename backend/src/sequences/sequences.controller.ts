@@ -7,15 +7,19 @@ export class SequencesController {
 
   @Post('start')
   async start(
-    @Body() body: { clientId: string; leadId: string; campaignId: string; channel?: 'email' },
+    @Body() body: { clientId: string; campaignId: string; leadId?: string; leadEmail?: string; channel?: 'email' },
   ) {
     return this.sequences.startSequence(body);
   }
 
   @Post('tick')
-  async tick(@Query('limit') limit?: string, @Request() _req: any) {
+  async tick(@Query('limit') limit?: string) {
     const n = limit ? parseInt(limit, 10) : 10;
     return this.sequences.tick(n);
   }
-}
 
+  @Post('queue')
+  async queue(@Body() body: { campaignId: string; limit?: number }) {
+    return this.sequences.listQueueByCampaign(body.campaignId, body.limit || 5);
+  }
+}

@@ -4,8 +4,9 @@ import { GmailService } from '../integrations/gmail.service';
 
 interface StartSequenceDto {
   clientId: string;
-  leadId: string;
   campaignId: string;
+  leadId?: string;
+  leadEmail?: string;
   channel?: 'email';
 }
 
@@ -17,7 +18,7 @@ export class SequencesService {
   ) {}
 
   // Insert three basic steps spaced over 0d, +2d, +5d
-  async startSequence({ clientId, leadId, campaignId, channel = 'email' }: StartSequenceDto) {
+  async startSequence({ clientId, leadId, leadEmail, campaignId, channel = 'email' }: StartSequenceDto) {
     const now = new Date();
     const step1 = new Date(now);
     const step2 = new Date(now.getTime() + 2 * 24 * 60 * 60 * 1000);
@@ -26,7 +27,12 @@ export class SequencesService {
     // Fetch lead details (from Supabase leads table) for templating
     let lead: any = null;
     try {
-      lead = await this.db.findOne('leads', { id: leadId });
+      if (leadId) {
+        lead = await this.db.findOne('leads', { id: leadId });
+      } else if (leadEmail) {
+        lead = await this.db.findOne('leads', { email: leadEmail });
+        leadId = lead?.id;
+      }
     } catch {}
 
     const firstName = lead?.first_name || 'there';
@@ -35,7 +41,7 @@ export class SequencesService {
       {
         campaign_id: campaignId,
         client_id: clientId,
-        lead_id: leadId,
+        lead_id: leadId || (lead?.id ?? ''),
         channel,
         subject: `Quick question about ${lead?.company || 'your needs'}`,
         content: `Hi ${firstName},\n\nWanted to share something that could help you hit your goals faster. Would 10 minutes this week be okay?`,
@@ -45,7 +51,7 @@ export class SequencesService {
       {
         campaign_id: campaignId,
         client_id: clientId,
-        lead_id: leadId,
+        lead_id: leadId || (lead?.id ?? ''),
         channel,
         subject: `Following up — any thoughts?`,
         content: `Hi ${firstName},\n\nJust following up in case this got buried. Happy to share examples and results.`,
@@ -55,7 +61,7 @@ export class SequencesService {
       {
         campaign_id: campaignId,
         client_id: clientId,
-        lead_id: leadId,
+        lead_id: leadId || (lead?.id ?? ''),
         channel,
         subject: `Should I close the loop?`,
         content: `Hi ${firstName},\n\nIf now’s not the right time, no problem — I can circle back later. If interested, a quick call is easiest.`,
@@ -140,5 +146,15 @@ export class SequencesService {
 
     return { processed: results.length, results };
   }
-}
 
+  async listQueueByCampaign(campaignId: string, limit = 5) {
+    const { data, error } = await this.db.client
+      .from('sequence_queue')
+      .select('*')
+      .eq('campaign_id', campaignId)
+      .order('due_at', { ascending: true })
+      .limit(limit);
+    if (error) throw new Error(error.message);
+    return data || [];
+  }
+}
