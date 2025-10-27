@@ -299,10 +299,10 @@ export default function Home() {
     <div className="min-h-screen flex flex-col">
       {/* ----- PART 1: NAVBAR + HERO (with background2.png and more height) ----- */}
       <div
-        className="relative w-full"
+        className="relative w-full min-h-screen flex flex-col"
         style={{
           backgroundImage: "url('/background2.png')",
-          backgroundSize: 'cover',
+          backgroundSize: '100% 100%',
           backgroundPosition: 'center',
           backgroundRepeat: 'no-repeat',
           backgroundAttachment: 'scroll',
@@ -342,9 +342,9 @@ export default function Home() {
 
             {/* Text (full width, centered) */}
             <div className="w-full">
-              <h1 className="text-4xl md:text-6xl font-extrabold text-gray-900 mb-6 leading-tight text-center">
+              <h1 className="text-4xl md:text-6xl font-extrabold text-white mb-6 leading-tight text-center">
                 Automate Your Sales with{' '}
-                <span className="relative inline-block h-[1.25em] bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600 text-blue-700 font-bold">
+                <span className="relative inline-block h-[1.25em] bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600 text-pink-700 font-bold">
                   <AnimatedRotatingText
                     texts={[
                       "AI Agents",

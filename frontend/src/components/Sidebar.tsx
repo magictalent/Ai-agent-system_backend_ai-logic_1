@@ -30,12 +30,14 @@ export default function Sidebar() {
       {/* Sidebar top: logo and trial notice */}
       <div className="px-5 pt-6 pb-5 border-b border-[#5A314F]">
         <div className="flex items-center gap-2 mb-5">
-          <img
-            src="/logo.png"
-            alt="AI Sales Agents Logo"
-            className="w-16 h-16 object-contain"
-            draggable={false}
-          />
+          <Link href="/">
+            <img
+              src="/logo.png"
+              alt="AI Sales Agents Logo"
+              className="w-16 h-16 object-contain"
+              draggable={false}
+            />
+          </Link>
           <div>
             <span className="text-lg font-bold text-white block">AI Sales Agents</span>
             <span className="text-xs text-[#FFB051] bg-[#FFDDB0] px-2 py-0.5 rounded font-semibold uppercase tracking-wide">TRIAL</span>
@@ -43,14 +45,25 @@ export default function Sidebar() {
         </div>
         <div className="text-xs text-[#E2CCE6] bg-[#44214B] px-3 py-2 rounded mt-1">
           <span className="font-semibold block mb-1">Ask your AI Salesbot for quick actions.</span>
-          <span className="opacity-80">
-            Type what you want in the box above to start.
-          </span>
+          <input
+            type="text"
+            placeholder="Ask your AI Salesbot..."
+            className="w-full bg-[#51305C] text-[#FFB051] px-3 py-2 rounded outline-none border border-[#71537A] focus:border-[#FFB051] placeholder:text-[#E2CCE6] placeholder:opacity-70 text-sm"
+          
+          />
         </div>
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 px-1 pt-6 pb-2 overflow-y-auto">
+      <nav
+        className="px-1 pt-6 pb-2 overflow-y-auto"
+        style={{
+          position: "sticky",
+          top: 0,
+          zIndex: 20,
+          background: "#3B1C3A"
+        }}
+      >
         <ul className="flex flex-col gap-1">
           {menuItems.map((item, i) => {
             const Icon = item.icon

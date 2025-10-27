@@ -9,7 +9,7 @@ export default function Topbar() {
   const pathname = usePathname();
 
   return (
-    <header className="h-14 bg-[#3B1C3A] border-b border-[#5A314F] flex items-center px-6 justify-between relative z-40">
+    <header className="h-14 bg-[#3B1C3A] border-b border-[#5A314F] flex items-center px-6 justify-between sticky top-0 z-40">
       {/* Left: Logo & Page Title */}
       <div className="flex items-center gap-5">
         <div className="flex items-center gap-2">
@@ -95,5 +95,4 @@ function getTitleFromPath(path: string) {
   const first = path.split('/').filter(Boolean)[0];
   return map[first] || first.charAt(0).toUpperCase() + first.slice(1);
 }
-
 

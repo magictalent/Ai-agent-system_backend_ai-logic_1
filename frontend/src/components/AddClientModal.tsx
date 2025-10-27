@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import Image from 'next/image'
 import { CreateClientData, CRMProvider } from '@/types/client'
 
 interface AddClientModalProps {
@@ -14,28 +15,28 @@ const crmProviders: CRMProvider[] = [
     id: 'hubspot',
     name: 'HubSpot',
     description: 'All-in-one CRM platform',
-    icon: '🟠',
+    icon: '/icons/hubspot.png',
     connected: false
   },
   {
     id: 'salesforce',
     name: 'Salesforce',
     description: 'Enterprise CRM solution',
-    icon: '🔵',
+    icon: '/icons/salesforce.png',
     connected: false
   },
   {
     id: 'pipedrive',
     name: 'Pipedrive',
     description: 'Sales-focused CRM',
-    icon: '🟢',
+    icon: '/icons/pipedrive.png',
     connected: false
   },
   {
     id: 'mock',
     name: 'Mock CRM',
     description: 'For testing purposes',
-    icon: '🧪',
+    icon: '/icons/mock.png', // ✅ now points correctly to /public/icons/mock.png
     connected: true
   }
 ]
@@ -65,7 +66,6 @@ export default function AddClientModal({ isOpen, onClose, onSubmit }: AddClientM
 
     try {
       await onSubmit(formData)
-      // Reset form
       setFormData({
         name: '',
         email: '',
@@ -199,7 +199,13 @@ export default function AddClientModal({ isOpen, onClose, onSubmit }: AddClientM
                       className="sr-only"
                     />
                     <div className="flex items-center space-x-3">
-                      <span className="text-2xl">{provider.icon}</span>
+                      <Image
+                        src={provider.icon}
+                        alt={provider.name}
+                        width={40}
+                        height={40}
+                        className="rounded-md object-contain"
+                      />
                       <div>
                         <div className="font-medium text-gray-900">{provider.name}</div>
                         <div className="text-sm text-gray-500">{provider.description}</div>
