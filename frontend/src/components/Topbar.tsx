@@ -53,7 +53,7 @@ export default function Topbar() {
             className="hidden absolute right-0 mt-2 w-40 bg-white rounded-md shadow-lg ring-1 ring-black ring-opacity-5 z-50 min-w-max"
           >
             <Link
-              href="/settings"
+              href="/profile"
               className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition"
               onClick={() => {
                 const dropdown = document.getElementById('user-menu-dropdown');

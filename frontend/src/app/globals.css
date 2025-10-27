@@ -1,6 +1,7 @@
 
 @import url('https://fonts.googleapis.com/css2?family=Lexend+Deca:wght@100..900&display=swap');
 @import "tailwindcss";
+@import '@fortawesome/fontawesome-free/css/all.min.css';
 
 :root {
   --background: #ffffff;

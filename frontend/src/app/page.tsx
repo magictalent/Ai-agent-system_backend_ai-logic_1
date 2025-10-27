@@ -613,7 +613,7 @@ export default function Home() {
       {/* ----- PART 4: FOOTER ----- */}
       <footer className="bg-[#23272a] text-gray-200 pt-14 pb-7 px-5 mt-8">
         <div className="max-w-7xl mx-auto">
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-8 pb-8 border-b border-gray-700 text-xs">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-8 pb-8 text-xs">
             <div>
               <h4 className="font-semibold text-gray-100 mb-3 uppercase tracking-wide">Popular Features</h4>
               <ul className="space-y-2">
@@ -676,14 +676,31 @@ export default function Home() {
               </ul>
             </div>
           </div>
-          <div className="flex justify-center space-x-5 mt-7 mb-5">
-            <a href="#" aria-label="Facebook" className="hover:text-blue-400"><i className="fab fa-facebook-f"></i></a>
-            <a href="#" aria-label="X (Twitter)" className="hover:text-blue-400"><i className="fab fa-x-twitter"></i></a>
-            <a href="#" aria-label="Instagram" className="hover:text-blue-400"><i className="fab fa-instagram"></i></a>
-            <a href="#" aria-label="LinkedIn" className="hover:text-blue-400"><i className="fab fa-linkedin-in"></i></a>
-            <a href="#" aria-label="YouTube" className="hover:text-blue-400"><i className="fab fa-youtube"></i></a>
+          <div className="flex items-center justify-center mt-7 mb-5 w-full">
+            <hr className="flex-grow border-t border-gray-600 mx-4" />
+            <div className="flex space-x-3 text-gray-400 text-sm">
+                <a href="#" className="hover:text-white">
+                  <i className="fab fa-facebook-f text-2xl"></i>
+                </a>
+                <a href="#" className="hover:text-white">
+                  <i className="fab fa-instagram text-2xl"></i>
+                </a>
+                <a href="#" className="hover:text-white">
+                  <i className="fab fa-github text-2xl"></i>
+                </a>
+                <a href="#" className="hover:text-white">
+                  <i className="fab fa-x-twitter text-2xl"></i>
+                </a>
+                <a href="#" className="hover:text-white">
+                  <i className="fab fa-linkedin-in text-2xl"></i>
+                </a>
+                <a href="#" className="hover:text-white">
+                  <i className="fas fa-globe text-2xl"></i>
+                </a>
+              </div>
+            <hr className="flex-grow border-t border-gray-600 mx-4" />
           </div>
-          <div className="flex flex-col items-center pt-4 border-t border-gray-700 text-xs">
+          <div className="flex flex-col items-center pt-4 text-xs">
             {/* Logo Centered */}
             <div className="mb-2 flex justify-center">
               <img
@@ -692,6 +709,11 @@ export default function Home() {
                 className="h-50 w-auto"
                 style={{ filter: 'brightness(0) invert(1)' }}
               />
+            </div>
+            <div className="flex items-center justify-center my-6">
+              <hr className="flex-grow border-t border-gray-600 mx-4" />
+              
+              <hr className="flex-grow border-t border-gray-600 mx-4" />
             </div>
             {/* Copyright */}
             <div className="text-gray-400 mb-3 text-center">
