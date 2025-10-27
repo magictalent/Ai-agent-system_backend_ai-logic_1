@@ -132,7 +132,7 @@ export default function AiDashboard() {
   if (!dashboardData || dashboardData.total_active_campaigns === 0) {
     return (
       <div className="bg-white rounded-lg shadow p-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">🤖 AI Dashboard</h3>
+        <h3 className="text-lg font-semibold text-gray-900 mb-4">AI Dashboard</h3>
         <div className="text-center py-8">
           <div className="text-6xl mb-4">🤖</div>
           <h4 className="text-lg font-medium text-gray-900 mb-2">No Active AI Campaigns</h4>
@@ -145,7 +145,7 @@ export default function AiDashboard() {
   return (
     <div className="bg-white rounded-lg shadow p-6">
       <div className="flex justify-between items-center mb-6">
-        <h3 className="text-lg font-semibold text-gray-900">🤖 AI Dashboard</h3>
+        <h3 className="text-lg font-semibold text-gray-900">AI Dashboard</h3>
         <button
           onClick={fetchAiDashboard}
           className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm"

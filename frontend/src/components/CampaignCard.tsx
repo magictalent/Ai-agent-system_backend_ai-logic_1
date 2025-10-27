@@ -43,7 +43,9 @@ export default function CampaignCard({ campaign, onEdit, onStart, onPause, onSto
             onClick={() => handleAction('start')}
             className="flex items-center space-x-2 px-4 py-2 bg-green-100 text-green-800 rounded-lg hover:bg-green-200 transition-colors"
           >
-            <span>▶️</span>
+            <span>
+              <img src="/icons/start.png" alt="Start" className="w-5 h-5 inline" />
+            </span>
             <span>Start</span>
           </button>
         )
@@ -53,7 +55,9 @@ export default function CampaignCard({ campaign, onEdit, onStart, onPause, onSto
             onClick={() => handleAction('pause')}
             className="flex items-center space-x-2 px-4 py-2 bg-yellow-100 text-yellow-800 rounded-lg hover:bg-yellow-200 transition-colors"
           >
-            <span>⏸️</span>
+            <span>
+              <img src="/icons/pause.png" alt="Pause" className="w-5 h-5 inline" />
+            </span>
             <span>Pause</span>
           </button>
         )
@@ -63,7 +67,9 @@ export default function CampaignCard({ campaign, onEdit, onStart, onPause, onSto
             onClick={() => handleAction('start')}
             className="flex items-center space-x-2 px-4 py-2 bg-green-100 text-green-800 rounded-lg hover:bg-green-200 transition-colors"
           >
-            <span>▶️</span>
+            <span>
+              <img src="/icons/start.png" alt="Start" className="w-5 h-5 inline" />
+            </span>
             <span>Start</span>
           </button>
         )
@@ -164,7 +170,7 @@ export default function CampaignCard({ campaign, onEdit, onStart, onPause, onSto
           onClick={() => handleAction('edit')}
           className="flex items-center space-x-2 px-4 py-2 bg-blue-100 text-blue-800 rounded-lg hover:bg-blue-200 transition-colors"
         >
-          <span>✏️</span>
+          <img src="/icons/edit.png" alt="Edit" className="w-5 h-5" />
           <span>Edit</span>
         </button>
       </div>
