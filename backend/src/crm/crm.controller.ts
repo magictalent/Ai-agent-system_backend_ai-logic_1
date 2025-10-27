@@ -34,4 +34,9 @@ export class CrmController {
   ) {
     return this.crmService.createLead(body.provider, body.data);
   }
+
+  @Post('import')
+  async importLeads(@Query('provider') provider: string) {
+    return this.crmService.importLeads(provider);
+  }
 }
