@@ -88,4 +88,102 @@ export class DashboardService {
       return [];
     }
   }
+
+  private buildDateBuckets(days: number) {
+    const buckets: Record<string, { date: string; leads: number; outbound: number; inbound: number; appointments: number }> = {};
+    const arr: any[] = [];
+    const now = new Date();
+    for (let i = days - 1; i >= 0; i--) {
+      const d = new Date(now);
+      d.setDate(now.getDate() - i);
+      const key = d.toISOString().slice(0, 10);
+      const obj = { date: key, leads: 0, outbound: 0, inbound: 0, appointments: 0 };
+      buckets[key] = obj;
+      arr.push(obj);
+    }
+    return { buckets, arr };
+  }
+
+  async getTimeSeries(days = 7) {
+    const fromIso = new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString();
+    const { buckets, arr } = this.buildDateBuckets(days);
+
+    // Leads per day
+    try {
+      const { data: leads } = await this.db.client
+        .from('leads')
+        .select('id, created_at')
+        .gte('created_at', fromIso);
+      for (const r of (leads || []) as any[]) {
+        const key = (r.created_at || '').slice(0, 10);
+        if (buckets[key]) buckets[key].leads += 1;
+      }
+    } catch {}
+
+    // Messages per day split by direction
+    try {
+      const { data: msgs } = await this.db.client
+        .from('messages')
+        .select('id, created_at, direction')
+        .gte('created_at', fromIso);
+      for (const m of (msgs || []) as any[]) {
+        const key = (m.created_at || '').slice(0, 10);
+        if (!buckets[key]) continue;
+        if (m.direction === 'inbound') buckets[key].inbound += 1;
+        else buckets[key].outbound += 1;
+      }
+    } catch {}
+
+    // Appointments per day (optional, skip if table missing)
+    try {
+      const { data: appts } = await this.db.client
+        .from('meetings')
+        .select('id, start_time')
+        .gte('start_time', fromIso);
+      for (const a of (appts || []) as any[]) {
+        const key = (a.start_time || '').slice(0, 10);
+        if (buckets[key]) buckets[key].appointments += 1;
+      }
+    } catch {}
+
+    return { period_days: days, series: arr };
+  }
+
+  async getAnalytics(days = 7) {
+    const fromIso = new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString();
+    const out: any = { period_days: days, totals: {}, by_campaign: [], by_channel: [] };
+
+    // Totals + breakdowns
+    try {
+      const { count: leads } = await this.db.client
+        .from('leads')
+        .select('*', { count: 'exact', head: true })
+        .gte('created_at', fromIso);
+      const { data: msgs } = await this.db.client
+        .from('messages')
+        .select('direction, channel, campaign_id')
+        .gte('created_at', fromIso);
+      const totalOutbound = (msgs || []).filter((m: any) => m.direction === 'outbound').length;
+      const totalInbound = (msgs || []).filter((m: any) => m.direction === 'inbound').length;
+      out.totals = { leads: leads ?? 0, outbound: totalOutbound, inbound: totalInbound };
+
+      const byCh: Record<string, { channel: string; outbound: number; inbound: number }> = {};
+      for (const m of (msgs || []) as any[]) {
+        const key = m.channel || 'unknown';
+        if (!byCh[key]) byCh[key] = { channel: key, outbound: 0, inbound: 0 };
+        if (m.direction === 'inbound') byCh[key].inbound += 1; else byCh[key].outbound += 1;
+      }
+      out.by_channel = Object.values(byCh);
+
+      const byCamp: Record<string, { campaign_id: string; outbound: number; inbound: number }> = {};
+      for (const m of (msgs || []) as any[]) {
+        const key = m.campaign_id || 'unknown';
+        if (!byCamp[key]) byCamp[key] = { campaign_id: key, outbound: 0, inbound: 0 };
+        if (m.direction === 'inbound') byCamp[key].inbound += 1; else byCamp[key].outbound += 1;
+      }
+      out.by_campaign = Object.values(byCamp);
+    } catch {}
+
+    return out;
+  }
 }

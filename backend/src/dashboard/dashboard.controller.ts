@@ -15,5 +15,19 @@ export class DashboardController {
     const n = limit ? parseInt(limit, 10) : 6;
     return this.svc.getRecentLeads(n);
   }
-}
 
+  // Time-series metrics for charts (daily buckets)
+  @Get('timeseries')
+  async timeseries(@Query('period') period?: string) {
+    // Accept values like '7d' or '30d'; default 7d
+    const days = period && period.endsWith('d') ? parseInt(period, 10) : (period ? parseInt(period, 10) : 7);
+    return this.svc.getTimeSeries(isNaN(days) ? 7 : days);
+  }
+
+  // Aggregated analytics for details page
+  @Get('analytics')
+  async analytics(@Query('period') period?: string) {
+    const days = period && period.endsWith('d') ? parseInt(period, 10) : (period ? parseInt(period, 10) : 7);
+    return this.svc.getAnalytics(isNaN(days) ? 7 : days);
+  }
+}

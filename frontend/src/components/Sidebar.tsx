@@ -1,15 +1,16 @@
 'use client'
 
-import { LayoutDashboard, Megaphone } from 'lucide-react'
+import { LayoutDashboard, Megaphone, Users } from 'lucide-react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 
 const menuItems = [
   { icon: LayoutDashboard, label: 'Dashboard', href: '/dashboard' },
-  { icon: Megaphone, label: 'Onboarding', href: '/onboarding' },
+  { icon: Users, label: 'Leads', href: '/leads' },
   { icon: Megaphone, label: 'Campaigns', href: '/campaigns' },
   { icon: Megaphone, label: 'Integrations', href: '/integrations' },
   { icon: Megaphone, label: 'Analytics', href: '/analytics' },
+  { icon: Megaphone, label: 'Onboarding', href: '/onboarding' },
 ]
 
 export default function Sidebar() {
