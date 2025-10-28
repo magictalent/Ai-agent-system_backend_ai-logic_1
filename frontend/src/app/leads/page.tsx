@@ -1,70 +1,84 @@
 'use client'
 
-import { useState } from 'react'
-import { Search, Filter, Plus, Mail, Phone, MessageCircle, Calendar } from 'lucide-react'
+import { useEffect, useMemo, useState } from 'react'
+import { Search, Plus, Mail, Phone } from 'lucide-react'
+import { useAuth } from '@/contexts/AuthContext'
 
-interface Lead {
+type DbLead = {
+  id: string
+  email: string
+  first_name?: string
+  last_name?: string
+  phone?: string
+  status?: string
+  last_contacted?: string
+}
+
+type UiLead = {
   id: string
   name: string
   email: string
   phone: string
   source: string
   lastContact: string
-  status: 'replied' | 'interested' | 'no-reply' | 'booked'
+  status: string
   notes?: string
 }
 
-const leads: Lead[] = [
-  {
-    id: '1',
-    name: 'John Doe',
-    email: 'john@example.com',
-    phone: '+1 (555) 123-4567',
-    source: 'Gmail',
-    lastContact: '2 hours ago',
-    status: 'replied',
-    notes: 'Asked for car price'
-  },
-  {
-    id: '2',
-    name: 'Sarah Li',
-    email: 'sarah.li@email.com',
-    phone: '+1 (555) 987-6543',
-    source: 'AI Generated',
-    lastContact: '1 day ago',
-    status: 'interested'
-  },
-  {
-    id: '3',
-    name: 'AutoMart Co.',
-    email: 'contact@automart.com',
-    phone: '+1 (555) 456-7890',
-    source: 'Craigslist',
-    lastContact: '3 days ago',
-    status: 'no-reply'
-  },
-  {
-    id: '4',
-    name: 'Mike Johnson',
-    email: 'mike.j@example.com',
-    phone: '+1 (555) 234-5678',
-    source: 'Website Form',
-    lastContact: '5 hours ago',
-    status: 'booked'
-  }
-]
-
 export default function Leads() {
+  const { token } = useAuth()
+  const [dbLeads, setDbLeads] = useState<DbLead[]>([])
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string>('')
   const [searchTerm, setSearchTerm] = useState('')
-  const [selectedLead, setSelectedLead] = useState<Lead | null>(leads[0])
   const [activeTab, setActiveTab] = useState('all')
 
-  const filteredLeads = leads.filter(lead =>
-    lead.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    lead.email.toLowerCase().includes(searchTerm.toLowerCase())
-  ).filter(lead => 
-    activeTab === 'all' || lead.status === activeTab
-  )
+  const uiLeads: UiLead[] = useMemo(() => {
+    return (dbLeads || []).map((l) => ({
+      id: l.id,
+      name: `${l.first_name || ''} ${l.last_name || ''}`.trim() || l.email || l.id,
+      email: l.email || '',
+      phone: l.phone || '',
+      source: 'CRM',
+      lastContact: l.last_contacted ? new Date(l.last_contacted).toLocaleString() : '—',
+      status: l.status || 'new',
+    }))
+  }, [dbLeads])
+
+  const [selectedLead, setSelectedLead] = useState<UiLead | null>(null)
+
+  useEffect(() => {
+    // initial selection
+    if (!selectedLead && uiLeads.length > 0) setSelectedLead(uiLeads[0])
+  }, [uiLeads, selectedLead])
+
+  useEffect(() => {
+    const fetchLeads = async () => {
+      if (!token) return
+      setLoading(true)
+      setError('')
+      try {
+        const res = await fetch('http://localhost:3001/crm/leads-db?limit=200', {
+          headers: { Authorization: `Bearer ${token}` },
+        })
+        if (!res.ok) throw new Error(await res.text())
+        const data = await res.json()
+        setDbLeads(Array.isArray(data) ? data : [])
+      } catch (e: any) {
+        setError(e.message || 'Failed to fetch leads')
+      } finally {
+        setLoading(false)
+      }
+    }
+    fetchLeads()
+  }, [token])
+
+  const filteredLeads = uiLeads
+    .filter(lead =>
+      lead.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      lead.email.toLowerCase().includes(searchTerm.toLowerCase())
+    )
+    .filter(lead => activeTab === 'all' || lead.status === activeTab)
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -72,6 +86,7 @@ export default function Leads() {
       case 'interested': return 'bg-blue-100 text-blue-800'
       case 'booked': return 'bg-purple-100 text-purple-800'
       case 'no-reply': return 'bg-gray-100 text-gray-800'
+      case 'new': return 'bg-yellow-100 text-yellow-800'
       default: return 'bg-gray-100 text-gray-800'
     }
   }
@@ -82,6 +97,7 @@ export default function Leads() {
       case 'interested': return 'Interested'
       case 'booked': return 'Booked'
       case 'no-reply': return 'No Reply'
+      case 'new': return 'New'
       default: return status
     }
   }
@@ -99,6 +115,13 @@ export default function Leads() {
               <span>Add Lead</span>
             </button>
           </div>
+
+          {loading && (
+            <div className="text-sm text-gray-600">Loading leads…</div>
+          )}
+          {error && (
+            <div className="text-sm text-red-600">{error}</div>
+          )}
 
           {/* Tabs */}
           <div className="flex space-x-1 bg-gray-100 rounded-lg p-1">
@@ -218,7 +241,7 @@ export default function Leads() {
                 </div>
               </div>
 
-              {/* Lead Reply */}
+              {/* Lead Reply (example content) */}
               <div className="flex space-x-3 mb-4">
                 <div className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center flex-shrink-0">
                   <span className="text-sm font-medium text-gray-600">

@@ -10,9 +10,10 @@ interface CampaignCardProps {
   onStart: (campaignId: string) => void
   onPause: (campaignId: string) => void
   onStop: (campaignId: string) => void
+  onDelete: (campaignId: string) => void
 }
 
-export default function CampaignCard({ campaign, onEdit, onStart, onPause, onStop }: CampaignCardProps) {
+export default function CampaignCard({ campaign, onEdit, onStart, onPause, onStop, onDelete }: CampaignCardProps) {
   const [showActions, setShowActions] = useState(false)
   const { token } = useAuth()
   const [showSequence, setShowSequence] = useState(false)
@@ -59,6 +60,9 @@ export default function CampaignCard({ campaign, onEdit, onStart, onPause, onSto
         break
       case 'edit':
         onEdit(campaign)
+        break
+      case 'delete':
+        onDelete(campaign.id)
         break
     }
   }
@@ -208,6 +212,12 @@ export default function CampaignCard({ campaign, onEdit, onStart, onPause, onSto
           <img src="/icons/start.png" alt="Seq" className="w-5 h-5" />
           <span>Sequence</span>
         </button>
+        <button
+          onClick={() => handleAction('delete')}
+          className="flex items-center space-x-2 px-4 py-2 bg-red-100 text-red-800 rounded-lg hover:bg-red-200 transition-colors"
+        >
+          <span>Delete</span>
+        </button>
       </div>
 
       {showSequence && (
@@ -336,3 +346,7 @@ async function loadQueueInternal(campaignId: string, token: string) {
   }
   return await res.json()
 }
+
+
+
+

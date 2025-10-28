@@ -67,15 +67,25 @@ export class DashboardService {
     try {
       const { data, error } = await this.db.client
         .from('leads')
-        .select('id, first_name, last_name, email, status, created_at, last_contacted')
+        .select('*')
         .order('created_at', { ascending: false })
         .limit(limit);
       if (error) throw new Error(error.message);
-      return data || [];
+      const rows = Array.isArray(data) ? data : [];
+      // Normalize possible column names (first_name vs firstname, etc.)
+      const normalized = rows.map((r: any) => ({
+        id: r.id,
+        first_name: r.first_name ?? r.firstname ?? r.first ?? '',
+        last_name: r.last_name ?? r.lastname ?? r.last ?? '',
+        email: r.email ?? '',
+        status: r.status ?? 'new',
+        created_at: r.created_at,
+        last_contacted: r.last_contacted ?? r.lastcontacted ?? null,
+      }));
+      return normalized;
     } catch (e: any) {
       this.logger.error('recent leads failed', e);
       return [];
     }
   }
 }
-

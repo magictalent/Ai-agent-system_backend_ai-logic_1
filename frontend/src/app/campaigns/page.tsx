@@ -24,8 +24,6 @@ export default function CampaignsPage() {
       setLoading(true)
       setError('')
 
-      // There is no actual error "fix" in the non-JSX code—only possibly in JSX
-      // Check for missing token or fail gracefully
       if (!token) {
         setError('Missing user token. Please re-login.')
         setLoading(false)
@@ -93,7 +91,6 @@ export default function CampaignsPage() {
       })
 
       if (!response.ok) {
-        // Defensive: response may not always be JSON
         let errorMsg = 'Failed to create campaign'
         try {
           const errorData = await response.json()
@@ -123,7 +120,6 @@ export default function CampaignsPage() {
 
       if (!response.ok) throw new Error('Failed to start campaign')
 
-      // Update local state
       setCampaigns(prev => prev.map(c =>
         c.id === campaignId ? { ...c, status: 'active' as const } : c
       ))
@@ -169,6 +165,26 @@ export default function CampaignsPage() {
       ))
     } catch (err: any) {
       setError(err.message)
+    }
+  }
+
+  const handleDeleteCampaign = async (campaignId: string) => {
+    try {
+      if (!confirm('Delete this campaign? This cannot be undone.')) return
+      const res = await fetch(`http://localhost:3001/campaigns/${campaignId}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      })
+      if (!res.ok) {
+        const txt = await res.text()
+        throw new Error(txt || 'Failed to delete campaign')
+      }
+      setCampaigns(prev => prev.filter(c => c.id !== campaignId))
+    } catch (e: any) {
+      setError(e.message)
     }
   }
 
@@ -468,6 +484,7 @@ export default function CampaignsPage() {
                 onStart={handleStartCampaign}
                 onPause={handlePauseCampaign}
                 onStop={handleStopCampaign}
+                onDelete={handleDeleteCampaign}
               />
             ))}
           </div>
@@ -483,3 +500,4 @@ export default function CampaignsPage() {
     </div>
   )
 }
+
