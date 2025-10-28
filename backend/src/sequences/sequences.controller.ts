@@ -7,7 +7,7 @@ export class SequencesController {
 
   @Post('start')
   async start(
-    @Body() body: { clientId: string; campaignId: string; leadId?: string; leadEmail?: string; channel?: 'email' },
+    @Body() body: { clientId: string; campaignId: string; leadId?: string; leadEmail?: string; channel?: 'email' | 'sms' | 'whatsapp' },
   ) {
     return this.sequences.startSequence(body);
   }

@@ -23,9 +23,17 @@ export default function CampaignsPage() {
     try {
       setLoading(true)
       setError('')
-      
+
+      // There is no actual error "fix" in the non-JSX code—only possibly in JSX
+      // Check for missing token or fail gracefully
+      if (!token) {
+        setError('Missing user token. Please re-login.')
+        setLoading(false)
+        return
+      }
+
       console.log('🔍 Fetching data with token:', token ? 'Present' : 'Missing')
-      
+
       const [campaignsResponse, clientsResponse] = await Promise.all([
         fetch('http://localhost:3001/campaigns', {
           headers: {
@@ -58,10 +66,10 @@ export default function CampaignsPage() {
 
       const campaignsData = await campaignsResponse.json()
       const clientsData = await clientsResponse.json()
-      
+
       console.log('📊 Campaigns data:', campaignsData)
       console.log('👥 Clients data:', clientsData)
-      
+
       setCampaigns(campaignsData)
       setClients(clientsData)
     } catch (err: any) {
@@ -85,13 +93,19 @@ export default function CampaignsPage() {
       })
 
       if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.message || 'Failed to create campaign')
+        // Defensive: response may not always be JSON
+        let errorMsg = 'Failed to create campaign'
+        try {
+          const errorData = await response.json()
+          errorMsg = errorData.message || errorMsg
+        } catch (e) {}
+        throw new Error(errorMsg)
       }
 
       const newCampaign = await response.json()
       setCampaigns(prev => [...prev, newCampaign])
     } catch (err: any) {
+      setError(err.message || 'Failed to create campaign')
       throw new Error(err.message || 'Failed to create campaign')
     }
   }
@@ -108,9 +122,9 @@ export default function CampaignsPage() {
       })
 
       if (!response.ok) throw new Error('Failed to start campaign')
-      
+
       // Update local state
-      setCampaigns(prev => prev.map(c => 
+      setCampaigns(prev => prev.map(c =>
         c.id === campaignId ? { ...c, status: 'active' as const } : c
       ))
     } catch (err: any) {
@@ -129,8 +143,8 @@ export default function CampaignsPage() {
       })
 
       if (!response.ok) throw new Error('Failed to pause campaign')
-      
-      setCampaigns(prev => prev.map(c => 
+
+      setCampaigns(prev => prev.map(c =>
         c.id === campaignId ? { ...c, status: 'paused' as const } : c
       ))
     } catch (err: any) {
@@ -149,8 +163,8 @@ export default function CampaignsPage() {
       })
 
       if (!response.ok) throw new Error('Failed to stop campaign')
-      
-      setCampaigns(prev => prev.map(c => 
+
+      setCampaigns(prev => prev.map(c =>
         c.id === campaignId ? { ...c, status: 'completed' as const } : c
       ))
     } catch (err: any) {
@@ -282,9 +296,9 @@ export default function CampaignsPage() {
                       const result = await response.json();
                       console.log('🧪 Test connection result:', result);
                       alert(`Test result: ${JSON.stringify(result, null, 2)}`);
-                    } catch (err) {
+                    } catch (err: any) {
                       console.error('❌ Test failed:', err);
-                      alert(`Test failed: ${err.message}`);
+                      alert(`Test failed: ${err.message || err}`);
                     }
                   }}
                   className="px-3 py-1 bg-green-500 text-white text-sm rounded hover:bg-green-600"
@@ -303,9 +317,9 @@ export default function CampaignsPage() {
                       const result = await response.json();
                       console.log('👥 All clients result:', result);
                       alert(`Found ${result.length} clients: ${JSON.stringify(result, null, 2)}`);
-                    } catch (err) {
+                    } catch (err: any) {
                       console.error('❌ Get clients failed:', err);
-                      alert(`Get clients failed: ${err.message}`);
+                      alert(`Get clients failed: ${err.message || err}`);
                     }
                   }}
                   className="px-3 py-1 bg-purple-500 text-white text-sm rounded hover:bg-purple-600"
@@ -464,7 +478,6 @@ export default function CampaignsPage() {
           isOpen={showAddModal}
           onClose={() => setShowAddModal(false)}
           onSubmit={handleCreateCampaign}
-          clients={clients}
         />
       </div>
     </div>

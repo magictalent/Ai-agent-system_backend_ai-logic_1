@@ -11,6 +11,8 @@ import { GmailService } from './integrations/gmail.service';
 import { CalendarService } from './integrations/calendar.service';
 import { IntegrationsModule } from './integrations/integrations.module';
 import { SequencesModule } from './sequences/sequences.module';
+import { DashboardModule } from './dashboard/dashboard.module';
+import { AutomationModule } from './automation/automation.module';
 import { SupabaseModule } from './supabase/supabase.module';
 import { SupabaseAuthGuard } from './auth/supabase-auth.guard';
 
@@ -29,6 +31,8 @@ import { SupabaseAuthGuard } from './auth/supabase-auth.guard';
     MessagesModule,
     IntegrationsModule,
     SequencesModule,
+    DashboardModule,
+    AutomationModule,
   ],
   providers: [
     GmailService, 
@@ -40,3 +44,4 @@ import { SupabaseAuthGuard } from './auth/supabase-auth.guard';
   ],
 })
 export class AppModule { }
+

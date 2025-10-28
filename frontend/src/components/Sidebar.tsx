@@ -6,6 +6,7 @@ import { usePathname } from 'next/navigation'
 
 const menuItems = [
   { icon: LayoutDashboard, label: 'Dashboard', href: '/dashboard' },
+  { icon: Megaphone, label: 'Onboarding', href: '/onboarding' },
   { icon: Megaphone, label: 'Campaigns', href: '/campaigns' },
   { icon: Megaphone, label: 'Integrations', href: '/integrations' },
   { icon: Megaphone, label: 'Analytics', href: '/analytics' },

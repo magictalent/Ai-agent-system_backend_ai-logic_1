@@ -2,6 +2,7 @@ import { Injectable, Inject } from '@nestjs/common';
 import { google } from 'googleapis';
 import { SupabaseClient } from '@supabase/supabase-js';
 import { ConfigService } from '@nestjs/config';
+import nodemailer from 'nodemailer';
 
 @Injectable()
 export class GmailService {
@@ -9,6 +10,37 @@ export class GmailService {
     private readonly config: ConfigService,
     @Inject('SUPABASE_CLIENT') private readonly supabase: SupabaseClient,
   ) {}
+
+  // Build a transporter if SMTP is configured
+  private buildSmtpTransport() {
+    const host = this.config.get<string>('SMTP_HOST');
+    const port = Number(this.config.get<string>('SMTP_PORT') || 587);
+    const user = this.config.get<string>('SMTP_USER');
+    const pass = this.config.get<string>('SMTP_PASS');
+
+    if (!host || !user || !pass) return null;
+
+    return nodemailer.createTransport({
+      host,
+      port,
+      secure: port === 465,
+      auth: { user, pass },
+    });
+  }
+
+  // Quick health check for SMTP credentials
+  async verifySmtp() {
+    const transport = this.buildSmtpTransport();
+    if (!transport) {
+      return { configured: false, ok: false, message: 'SMTP not configured. Set SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS.' };
+    }
+    try {
+      await transport.verify();
+      return { configured: true, ok: true };
+    } catch (e: any) {
+      return { configured: true, ok: false, message: e?.message || 'SMTP verify failed' };
+    }
+  }
 
   // Generate Google OAuth2 client dynamically
   private createOAuthClient() {
@@ -56,72 +88,32 @@ export class GmailService {
 
   // Step 3: Send email using stored credentials
   async sendEmail({
-    clientId,
     to,
     subject,
     text,
   }: {
-    clientId: string;
     to: string;
     subject: string;
     text: string;
   }) {
-    // Fetch stored tokens
-    const { data: tokenData, error } = await this.supabase
-      .from('google_tokens')
-      .select('*')
-      .eq('client_id', clientId)
-      .single();
+    // Prefer SMTP shared sender if configured
+    const transport = this.buildSmtpTransport();
+    const user = this.config.get<string>('SMTP_USER');
+    const fromEmail = this.config.get<string>('FROM_EMAIL') || user;
+    const fromName = this.config.get<string>('FROM_NAME') || 'AI Sales Assistant';
 
-    if (error || !tokenData) {
-      throw new Error('No Google tokens found for this client. Please connect your Google account.');
+    if (transport && fromEmail) {
+      await transport.sendMail({
+        from: `${fromName} <${fromEmail}>`,
+        to,
+        subject,
+        text,
+      });
+      return { success: true, to, subject, provider: 'smtp' };
     }
 
-    // Create client and set credentials
-    const oauth2Client = this.createOAuthClient();
-    oauth2Client.setCredentials({
-      access_token: tokenData.access_token,
-      refresh_token: tokenData.refresh_token,
-      expiry_date: tokenData.expiry_date,
-    });
-
-    // Refresh token if needed
-    oauth2Client.on('tokens', async (tokens) => {
-      if (tokens.refresh_token || tokens.access_token) {
-        await this.supabase.from('google_tokens').upsert({
-          client_id: clientId,
-          access_token: tokens.access_token ?? tokenData.access_token,
-          refresh_token: tokens.refresh_token ?? tokenData.refresh_token,
-          expiry_date: tokens.expiry_date ?? tokenData.expiry_date,
-        });
-      }
-    });
-
-    // Send Gmail message
-    const gmail = google.gmail({ version: 'v1', auth: oauth2Client });
-    const messageParts = [
-      `To: ${to}`,
-      'Content-Type: text/plain; charset=utf-8',
-      'MIME-Version: 1.0',
-      `Subject: ${subject}`,
-      '',
-      text,
-    ];
-    const message = messageParts.join('\n');
-
-    const encodedMessage = Buffer.from(message)
-      .toString('base64')
-      .replace(/\+/g, '-')
-      .replace(/\//g, '_')
-      .replace(/=+$/, '');
-
-    await gmail.users.messages.send({
-      userId: 'me',
-      requestBody: {
-        raw: encodedMessage,
-      },
-    });
-
-    return { success: true, to, subject };
+    // Fallback to per-client Gmail tokens if SMTP not configured
+    // For your new shared-sender setup, prefer configuring SMTP_* env vars.
+    throw new Error('SMTP not configured. Please set SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS, FROM_EMAIL');
   }
 }

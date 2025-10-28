@@ -10,6 +10,7 @@ CREATE TABLE sequence_queue (
   client_id text NOT NULL,
   lead_id text NOT NULL,
   channel text NOT NULL CHECK (channel IN ('email')),
+  type text NOT NULL DEFAULT 'email' CHECK (type IN ('email','book')),
   subject text,
   content text NOT NULL,
   due_at timestamptz NOT NULL,

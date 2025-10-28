@@ -1,13 +1,16 @@
 import { Injectable } from '@nestjs/common';
 import { SupabaseService } from '../supabase/supabase.service';
 import { GmailService } from '../integrations/gmail.service';
+import { CalendarService } from '../integrations/calendar.service';
+import { SmsService } from '../integrations/sms.service';
+import { WhatsappService } from '../integrations/whatsapp.service';
 
 interface StartSequenceDto {
   clientId: string;
   campaignId: string;
   leadId?: string;
   leadEmail?: string;
-  channel?: 'email';
+  channel?: 'email' | 'sms' | 'whatsapp';
 }
 
 @Injectable()
@@ -15,6 +18,9 @@ export class SequencesService {
   constructor(
     private readonly db: SupabaseService,
     private readonly gmail: GmailService,
+    private readonly calendar: CalendarService,
+    private readonly sms: SmsService,
+    private readonly whatsapp: WhatsappService,
   ) {}
 
   // Insert three basic steps spaced over 0d, +2d, +5d
@@ -43,6 +49,7 @@ export class SequencesService {
         client_id: clientId,
         lead_id: leadId || (lead?.id ?? ''),
         channel,
+        type: 'email',
         subject: `Quick question about ${lead?.company || 'your needs'}`,
         content: `Hi ${firstName},\n\nWanted to share something that could help you hit your goals faster. Would 10 minutes this week be okay?`,
         due_at: step1.toISOString(),
@@ -53,6 +60,7 @@ export class SequencesService {
         client_id: clientId,
         lead_id: leadId || (lead?.id ?? ''),
         channel,
+        type: 'email',
         subject: `Following up — any thoughts?`,
         content: `Hi ${firstName},\n\nJust following up in case this got buried. Happy to share examples and results.`,
         due_at: step2.toISOString(),
@@ -63,9 +71,22 @@ export class SequencesService {
         client_id: clientId,
         lead_id: leadId || (lead?.id ?? ''),
         channel,
+        type: 'email',
         subject: `Should I close the loop?`,
         content: `Hi ${firstName},\n\nIf now’s not the right time, no problem — I can circle back later. If interested, a quick call is easiest.`,
         due_at: step3.toISOString(),
+        status: 'pending',
+      },
+      // Optional booking step (+7d)
+      {
+        campaign_id: campaignId,
+        client_id: clientId,
+        lead_id: leadId || (lead?.id ?? ''),
+        channel,
+        type: 'book',
+        subject: `Intro call`,
+        content: `Auto-book intro call for ${firstName}`,
+        due_at: new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000).toISOString(),
         status: 'pending',
       },
     ];
@@ -98,7 +119,25 @@ export class SequencesService {
           continue;
         }
 
-        if (item.channel === 'email') {
+        if (item.type === 'book') {
+          // Attempt to create a calendar event for the client
+          const start = new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString();
+          try {
+            await this.calendar.createEventForClient(item.client_id, {
+              summary: item.subject || 'Intro call',
+              description: item.content || 'Automated booking from sequence',
+              startTime: start,
+              attendees: lead?.email ? [{ email: lead.email }] : [],
+            });
+            await this.db.update('sequence_queue', { id: item.id }, { status: 'sent', sent_at: new Date().toISOString() });
+            // Mark lead as scheduled
+            if (lead?.id) await this.db.update('leads', { id: lead.id }, { status: 'meeting_scheduled' });
+            results.push({ id: item.id, status: 'sent', action: 'booked' });
+          } catch (e: any) {
+            await this.db.update('sequence_queue', { id: item.id }, { status: 'failed', last_error: e.message || 'calendar_failed', updated_at: new Date().toISOString() });
+            results.push({ id: item.id, status: 'failed', error: e.message });
+          }
+        } else if (item.channel === 'email') {
           const toEmail = lead?.email;
           if (!toEmail) {
             await this.db.update('sequence_queue', { id: item.id }, { status: 'failed', last_error: 'missing_email', updated_at: new Date().toISOString() });
@@ -109,7 +148,6 @@ export class SequencesService {
           // Attempt to send email via Gmail
           try {
             await this.gmail.sendEmail({
-              clientId: item.client_id,
               to: toEmail,
               subject: item.subject || 'Hello',
               text: item.content || '',
@@ -134,8 +172,37 @@ export class SequencesService {
             await this.db.update('sequence_queue', { id: item.id }, { status: 'failed', last_error: e.message || 'send_failed', updated_at: new Date().toISOString() });
             results.push({ id: item.id, status: 'failed', error: e.message });
           }
+        } else if (item.channel === 'sms') {
+          const toPhone = lead?.phone;
+          if (!toPhone) {
+            await this.db.update('sequence_queue', { id: item.id }, { status: 'failed', last_error: 'missing_phone', updated_at: new Date().toISOString() });
+            results.push({ id: item.id, status: 'failed', error: 'missing_phone' });
+            continue;
+          }
+          try {
+            await this.sms.send(toPhone, item.content || '');
+            await this.db.update('sequence_queue', { id: item.id }, { status: 'sent', sent_at: new Date().toISOString() });
+            results.push({ id: item.id, status: 'sent' });
+          } catch (e: any) {
+            await this.db.update('sequence_queue', { id: item.id }, { status: 'failed', last_error: e.message || 'sms_failed', updated_at: new Date().toISOString() });
+            results.push({ id: item.id, status: 'failed', error: e.message });
+          }
+        } else if (item.channel === 'whatsapp') {
+          const toPhone = lead?.phone;
+          if (!toPhone) {
+            await this.db.update('sequence_queue', { id: item.id }, { status: 'failed', last_error: 'missing_phone', updated_at: new Date().toISOString() });
+            results.push({ id: item.id, status: 'failed', error: 'missing_phone' });
+            continue;
+          }
+          try {
+            await this.whatsapp.send(toPhone, item.content || '');
+            await this.db.update('sequence_queue', { id: item.id }, { status: 'sent', sent_at: new Date().toISOString() });
+            results.push({ id: item.id, status: 'sent' });
+          } catch (e: any) {
+            await this.db.update('sequence_queue', { id: item.id }, { status: 'failed', last_error: e.message || 'whatsapp_failed', updated_at: new Date().toISOString() });
+            results.push({ id: item.id, status: 'failed', error: e.message });
+          }
         } else {
-          // Future channels (whatsapp/sms)
           await this.db.update('sequence_queue', { id: item.id }, { status: 'failed', last_error: 'unsupported_channel', updated_at: new Date().toISOString() });
           results.push({ id: item.id, status: 'failed', error: 'unsupported_channel' });
         }

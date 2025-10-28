@@ -275,14 +275,6 @@ export default function CampaignCard({ campaign, onEdit, onStart, onPause, onSto
           </div>
           <div className="flex gap-2 mb-2">
             <button
-              onClick={() => {
-                window.location.href = `http://localhost:3001/google/auth/login?clientId=${campaign.client_id}`
-              }}
-              className="text-sm px-3 py-1 bg-blue-100 text-blue-800 rounded hover:bg-blue-200"
-            >
-              Connect Gmail for Client
-            </button>
-            <button
               onClick={async () => {
                 if (!token) { setSeqMsg('Please log in'); return }
                 try {

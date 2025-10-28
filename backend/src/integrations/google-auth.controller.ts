@@ -20,8 +20,9 @@ export class GoogleAuthController {
     @Query('returnUrl') returnUrl: string,
     @Res() res: Response,
   ) {
-    if (!clientId) {
-      return res.status(400).send('Missing clientId in query.');
+    // Allow a shared/default connection when no clientId provided
+    if (!clientId || clientId.trim() === '') {
+      clientId = 'shared';
     }
 
     const oauth2Client = new google.auth.OAuth2(
@@ -37,7 +38,7 @@ export class GoogleAuthController {
       access_type: 'offline',
       prompt: 'consent',
       scope: [
-        'https://www.googleapis.com/auth/gmail.send',
+        'https://www.googleapis.com/auth/calendar.events',
         'https://www.googleapis.com/auth/userinfo.email',
       ],
       state,
@@ -75,8 +76,7 @@ export class GoogleAuthController {
       // backward-compat: state might be raw clientId
       clientId = state;
     }
-
-    if (!clientId) return res.status(400).send('Missing clientId in state.');
+    if (!clientId || clientId.trim() === '') clientId = 'shared';
 
     // Store tokens in Supabase
     const { error } = await this.supabase.from('google_tokens').upsert(
@@ -109,4 +109,3 @@ export class GoogleAuthController {
     return res.send(`✅ Google tokens stored successfully for client ${clientId}`);
   }
 }
-

@@ -40,6 +40,7 @@
     "express": "^5.1.0",
     "googleapis": "^164.1.0",
     "mongoose": "^8.19.2",
+    "nodemailer": "^6.10.1",
     "openai": "^6.7.0",
     "passport": "^0.7.0",
     "passport-custom": "^1.1.1",
@@ -48,6 +49,7 @@
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.2",
     "swagger-ui-express": "^5.0.1",
+    "twilio": "^5.10.3",
     "typeorm": "^0.3.27"
   },
   "devDependencies": {

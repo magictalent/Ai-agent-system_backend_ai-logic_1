@@ -11,17 +11,23 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
 
+  const [summary, setSummary] = useState({ newLeads: 0, activeConversations: 0, bookedAppointments: 0, conversionRate: 0 })
+
   useEffect(() => {
     const load = async () => {
       try {
         setLoading(true)
         setError('')
-        const res = await fetch('http://localhost:3001/crm/leads?provider=hubspot', {
-          headers: { 'Authorization': `Bearer ${token || ''}` }
-        })
-        if (!res.ok) throw new Error(await res.text())
-        const data = await res.json()
-        setLeads(data || [])
+        const [sRes, lRes] = await Promise.all([
+          fetch('http://localhost:3001/dashboard/summary', { headers: { 'Authorization': `Bearer ${token || ''}` } }),
+          fetch('http://localhost:3001/dashboard/recent-leads?limit=6', { headers: { 'Authorization': `Bearer ${token || ''}` } }),
+        ])
+        if (!sRes.ok) throw new Error(await sRes.text())
+        if (!lRes.ok) throw new Error(await lRes.text())
+        setSummary(await sRes.json())
+        const leadsData = await lRes.json()
+        // Map to UI shape
+        setLeads((leadsData || []).map((r: any) => ({ id: r.id, firstname: r.first_name || '', lastname: r.last_name || '', email: r.email || '' })))
       } catch (e) {
         setError((e as any).message)
       } finally {
@@ -32,11 +38,11 @@ export default function Dashboard() {
   }, [token])
 
   const metrics = useMemo(() => ({
-    newLeads: leads.length,
-    activeConversations: 0,
-    bookedAppointments: 0,
-    conversionRate: 0,
-  }), [leads])
+    newLeads: summary.newLeads,
+    activeConversations: summary.activeConversations,
+    bookedAppointments: summary.bookedAppointments,
+    conversionRate: summary.conversionRate,
+  }), [summary])
 
   return (
     <div className="min-h-screen bg-gray-50 p-6">

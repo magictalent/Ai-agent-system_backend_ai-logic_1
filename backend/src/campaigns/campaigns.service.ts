@@ -45,21 +45,25 @@ export class CampaignsService {
   }
 
   async addCampaign(campaignData: CreateCampaignData & { user_id: string }) {
-    // Get client name for the campaign
-    const { data: clientData, error: clientError } = await this.supabase
-      .from('clients')
-      .select('name')
-      .eq('id', campaignData.client_id)
-      .eq('user_id', campaignData.user_id)
-      .single();
-
-    if (clientError) throw new Error('Client not found');
+    // Determine client name: if client_id not provided, use a default label
+    let clientName = 'My Business';
+    if (campaignData.client_id) {
+      const { data: clientData, error: clientError } = await this.supabase
+        .from('clients')
+        .select('name')
+        .eq('id', campaignData.client_id)
+        .eq('user_id', campaignData.user_id)
+        .single();
+      if (clientError) throw new Error('Client not found');
+      clientName = clientData.name;
+    }
 
     const { data, error } = await this.supabase
       .from('campaigns')
       .insert([{
         ...campaignData,
-        client_name: clientData.name,
+        client_id: campaignData.client_id || campaignData.user_id,
+        client_name: clientName,
         leads_count: 0,
         appointments_count: 0,
         response_rate: 0,

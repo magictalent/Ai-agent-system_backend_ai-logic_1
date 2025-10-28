@@ -52,16 +52,14 @@ Keep it professional, persuasive, and polite.`;
     const messageText = await this.generateLeadMessage(lead, offer);
   
     await this.gmailService.sendEmail({
-      clientId, // ✅ pass the client ID here
       to: lead.email,
       subject: `Regarding your interest in ${offer}`,
       text: messageText ?? '',
     });
-  
     await this.supabase.insert('messages', {
       client_id: client.id,
       lead_id: leadId,
-      channel: 'gmail',
+      channel: 'email',
       content: messageText,
       status: 'sent',
     });
@@ -104,3 +102,4 @@ Keep it professional, persuasive, and polite.`;
   }
   
 }
+

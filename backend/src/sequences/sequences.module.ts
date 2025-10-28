@@ -1,12 +1,12 @@
 import { Module } from '@nestjs/common';
 import { SequencesService } from './sequences.service';
 import { SequencesController } from './sequences.controller';
-import { GmailService } from '../integrations/gmail.service';
+import { IntegrationsModule } from '../integrations/integrations.module';
 
 @Module({
+  imports: [IntegrationsModule],
   controllers: [SequencesController],
-  providers: [SequencesService, GmailService],
+  providers: [SequencesService],
   exports: [SequencesService],
 })
 export class SequencesModule {}
-
