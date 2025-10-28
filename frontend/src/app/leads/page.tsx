@@ -46,11 +46,38 @@ export default function Leads() {
   }, [dbLeads])
 
   const [selectedLead, setSelectedLead] = useState<UiLead | null>(null)
+  const [convLoading, setConvLoading] = useState(false)
+  const [messages, setMessages] = useState<any[]>([])
+  const [convIndex, setConvIndex] = useState<Record<string, { count: number; last: string; lastDirection: 'outbound'|'inbound' }>>({})
+  const [tickLoading, setTickLoading] = useState(false)
+  const [simText, setSimText] = useState('')
+  const [simLoading, setSimLoading] = useState(false)
 
   useEffect(() => {
     // initial selection
     if (!selectedLead && uiLeads.length > 0) setSelectedLead(uiLeads[0])
   }, [uiLeads, selectedLead])
+
+  // Load conversation for selected lead
+  useEffect(() => {
+    const load = async () => {
+      if (!token || !selectedLead?.id) { setMessages([]); return }
+      setConvLoading(true)
+      try {
+        const res = await fetch(`http://localhost:3001/messages/lead/${encodeURIComponent(selectedLead.id)}` ,{
+          headers: { Authorization: `Bearer ${token}` },
+        })
+        if (!res.ok) throw new Error(await res.text())
+        const data = await res.json()
+        setMessages(Array.isArray(data) ? data : [])
+      } catch {
+        // ignore
+      } finally {
+        setConvLoading(false)
+      }
+    }
+    load()
+  }, [token, selectedLead?.id])
 
   useEffect(() => {
     const fetchLeads = async () => {
@@ -71,6 +98,31 @@ export default function Leads() {
       }
     }
     fetchLeads()
+  }, [token])
+
+  // Load conversation summaries for all leads
+  useEffect(() => {
+    const loadConversations = async () => {
+      if (!token) return
+      try {
+        const res = await fetch('http://localhost:3001/messages/conversations', {
+          headers: { Authorization: `Bearer ${token}` },
+        })
+        if (!res.ok) return
+        const list = await res.json()
+        const map: Record<string, { count: number; last: string; lastDirection: 'outbound'|'inbound' }> = {}
+        for (const c of Array.isArray(list) ? list : []) {
+          const lastMsg = (c.messages && c.messages[c.messages.length - 1]) || null
+          map[c.lead_id] = {
+            count: c.message_count || (c.messages ? c.messages.length : 0) || 0,
+            last: c.last_message_at || (lastMsg?.created_at || ''),
+            lastDirection: (lastMsg?.direction || 'outbound') as 'outbound'|'inbound',
+          }
+        }
+        setConvIndex(map)
+      } catch {}
+    }
+    loadConversations()
   }, [token])
 
   const filteredLeads = uiLeads
@@ -174,10 +226,22 @@ export default function Leads() {
                   <Mail size={14} />
                   <span>{lead.email}</span>
                 </div>
-                <div className="flex items-center space-x-2 text-sm text-gray-600 mb-2">
+                <div className="flex items-center space-x-2 text-sm text-gray-600 mb-2 flex-wrap">
                   <span>{lead.source}</span>
                   <span>•</span>
                   <span>{lead.lastContact}</span>
+                  {convIndex[lead.id] && (
+                    <>
+                      <span>•</span>
+                      <span className="text-gray-700">{convIndex[lead.id].count} msg</span>
+                      {convIndex[lead.id].last && (
+                        <span className="text-gray-500">(last {new Date(convIndex[lead.id].last).toLocaleString()})</span>
+                      )}
+                      <span className={`ml-1 px-2 py-0.5 rounded-full text-xs ${convIndex[lead.id].lastDirection === 'outbound' ? 'bg-blue-100 text-blue-700' : 'bg-gray-200 text-gray-700'}`}>
+                        {convIndex[lead.id].lastDirection === 'outbound' ? 'AI' : 'Lead'}
+                      </span>
+                    </>
+                  )}
                 </div>
                 {lead.notes && (
                   <p className="text-sm text-gray-600 bg-gray-50 p-2 rounded">{lead.notes}</p>
@@ -226,65 +290,125 @@ export default function Leads() {
 
             {/* Conversation */}
             <div className="bg-white rounded-xl border border-gray-200 p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Conversation</h3>
-              
-              {/* AI Message */}
-              <div className="flex space-x-3 mb-4">
-                <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
-                  <span className="text-sm font-medium text-blue-600">AI</span>
-                </div>
-                <div className="bg-blue-50 rounded-lg p-4 flex-1">
-                  <div className="text-sm text-blue-700">
-                    Hi {selectedLead.name.split(' ')[0]}, I saw you're looking for a Toyota 2008.
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold text-gray-900">Conversation</h3>
+                <button
+                  onClick={async () => {
+                    if (!token) return
+                    setTickLoading(true)
+                    try {
+                      const res = await fetch('http://localhost:3001/sequences/tick?limit=25', {
+                        method: 'POST',
+                        headers: { Authorization: `Bearer ${token}` },
+                      })
+                      await res.json().catch(() => null)
+                      // reload selected lead conversation
+                      const resConv = await fetch(`http://localhost:3001/messages/lead/${encodeURIComponent(selectedLead!.id)}`, {
+                        headers: { Authorization: `Bearer ${token}` },
+                      })
+                      if (resConv.ok) setMessages(await resConv.json())
+                      // reload index
+                      const resIdx = await fetch('http://localhost:3001/messages/conversations', {
+                        headers: { Authorization: `Bearer ${token}` },
+                      })
+                      if (resIdx.ok) {
+                        const list = await resIdx.json()
+                        const map: Record<string, { count: number; last: string; lastDirection: 'outbound'|'inbound' }> = {}
+                        for (const c of Array.isArray(list) ? list : []) {
+                          const lastMsg = (c.messages && c.messages[c.messages.length - 1]) || null
+                          map[c.lead_id] = {
+                            count: c.message_count || (c.messages ? c.messages.length : 0) || 0,
+                            last: c.last_message_at || (lastMsg?.created_at || ''),
+                            lastDirection: (lastMsg?.direction || 'outbound') as 'outbound'|'inbound',
+                          }
+                        }
+                        setConvIndex(map)
+                      }
+                    } finally {
+                      setTickLoading(false)
+                    }
+                  }}
+                  className="text-sm px-3 py-1 bg-gray-100 rounded hover:bg-gray-200 disabled:opacity-50"
+                  disabled={tickLoading}
+                >
+                  {tickLoading ? 'Processing…' : 'Run Tick'}
+                </button>
+              </div>
+              {convLoading && <div className="text-sm text-gray-500 mb-2">Loading conversation</div>}
+              {!convLoading && messages.length === 0 && (
+                <div className="text-sm text-gray-500">No messages for this lead yet.</div>
+              )}
+              <div className="space-y-4">
+                {messages.map((m: any) => (
+                  <div key={m.id} className={`flex ${m.direction === 'outbound' ? 'justify-end' : 'justify-start'}`}>
+                    {m.direction === 'inbound' && (
+                      <div className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center mr-2 flex-shrink-0">
+                        <span className="text-sm font-medium text-gray-600">
+                          {selectedLead.name.split(' ').map(n => n[0]).join('')}
+                        </span>
+                      </div>
+                    )}
+                    <div className={`${m.direction === 'outbound' ? 'bg-blue-50 text-blue-800' : 'bg-gray-100 text-gray-800'} rounded-lg p-4 max-w-[70%]`}>
+                      <div className="text-xs mb-1 flex items-center gap-2">
+                        <span className={`px-2 py-0.5 rounded-full ${m.direction === 'outbound' ? 'bg-blue-100 text-blue-700' : 'bg-gray-200 text-gray-700'}`}>
+                          {m.direction === 'outbound' ? 'AI' : 'Lead'}
+                        </span>
+                        <span className="text-gray-500">{new Date(m.created_at).toLocaleString()}</span>
+                        <span className="text-gray-500">• {m.channel}</span>
+                      </div>
+                      <div className="text-sm whitespace-pre-wrap">{m.content}</div>
+                    </div>
                   </div>
-                  <div className="text-xs text-blue-600 mt-2">2 hours ago</div>
-                </div>
+                ))}
               </div>
 
-              {/* Lead Reply (example content) */}
-              <div className="flex space-x-3 mb-4">
-                <div className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center flex-shrink-0">
-                  <span className="text-sm font-medium text-gray-600">
-                    {selectedLead.name.split(' ').map(n => n[0]).join('')}
-                  </span>
-                </div>
-                <div className="bg-gray-100 rounded-lg p-4 flex-1">
-                  <div className="text-sm text-gray-700">
-                    Yes! What's your asking price?
-                  </div>
-                  <div className="text-xs text-gray-600 mt-2">1 hour ago</div>
-                </div>
-              </div>
-
-              {/* AI Response */}
-              <div className="flex space-x-3 mb-6">
-                <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
-                  <span className="text-sm font-medium text-blue-600">AI</span>
-                </div>
-                <div className="bg-blue-50 rounded-lg p-4 flex-1">
-                  <div className="text-sm text-blue-700">
-                    It's 2500 USD. Would you like to schedule a viewing?
-                  </div>
-                  <div className="text-xs text-blue-600 mt-2">Just now</div>
-                </div>
-              </div>
-
-              {/* Message Input */}
-              <div className="border-t border-gray-200 pt-4">
-                <div className="flex space-x-3">
+              {/* Simulate an inbound reply (testing helper) */}
+              <div className="border-t border-gray-200 pt-4 mt-4">
+                <div className="flex gap-2 items-center">
                   <input
-                    type="text"
-                    placeholder="Type a message..."
-                    className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    value={simText}
+                    onChange={(e) => setSimText(e.target.value)}
+                    className="flex-1 px-3 py-2 border border-gray-300 rounded-lg"
+                    placeholder="Simulate lead reply..."
                   />
-                  <button className="bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-blue-700 transition">
-                    Send
+                  <button
+                    onClick={async () => {
+                      if (!token || !selectedLead?.id || !simText.trim()) return
+                      setSimLoading(true)
+                      try {
+                        const res = await fetch('http://localhost:3001/messages/simulate', {
+                          method: 'POST',
+                          headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+                          body: JSON.stringify({ leadId: selectedLead.id, content: simText.trim() }),
+                        })
+                        await res.json().catch(() => null)
+                        setSimText('')
+                        // Refresh conversation and index
+                        const resConv = await fetch(`http://localhost:3001/messages/lead/${encodeURIComponent(selectedLead.id)}`, { headers: { Authorization: `Bearer ${token}` } })
+                        if (resConv.ok) setMessages(await resConv.json())
+                        const resIdx = await fetch('http://localhost:3001/messages/conversations', { headers: { Authorization: `Bearer ${token}` } })
+                        if (resIdx.ok) {
+                          const list = await resIdx.json()
+                          const map: Record<string, { count: number; last: string; lastDirection: 'outbound'|'inbound' }> = {}
+                          for (const c of Array.isArray(list) ? list : []) {
+                            const lastMsg = (c.messages && c.messages[c.messages.length - 1]) || null
+                            map[c.lead_id] = {
+                              count: c.message_count || (c.messages ? c.messages.length : 0) || 0,
+                              last: c.last_message_at || (lastMsg?.created_at || ''),
+                              lastDirection: (lastMsg?.direction || 'outbound') as 'outbound'|'inbound',
+                            }
+                          }
+                          setConvIndex(map)
+                        }
+                      } finally {
+                        setSimLoading(false)
+                      }
+                    }}
+                    className="px-4 py-2 bg-gray-800 text-white rounded-lg disabled:opacity-50"
+                    disabled={simLoading}
+                  >
+                    {simLoading ? 'Sending…' : 'Simulate Reply'}
                   </button>
-                </div>
-                <div className="flex space-x-2 mt-2">
-                  <button className="text-sm text-gray-600 hover:text-gray-800">Schedule follow-up</button>
-                  <button className="text-sm text-gray-600 hover:text-gray-800">Mark as booked</button>
-                  <button className="text-sm text-gray-600 hover:text-gray-800">Add note</button>
                 </div>
               </div>
             </div>

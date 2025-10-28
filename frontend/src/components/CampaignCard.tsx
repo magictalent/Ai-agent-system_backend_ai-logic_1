@@ -21,6 +21,7 @@ export default function CampaignCard({ campaign, onEdit, onStart, onPause, onSto
   const [queue, setQueue] = useState<any[]>([])
   const [loadingQueue, setLoadingQueue] = useState(false)
   const [starting, setStarting] = useState(false)
+  const [bulkStarting, setBulkStarting] = useState(false)
   const [seqMsg, setSeqMsg] = useState('')
 
   const loadQueue = async () => {
@@ -269,6 +270,39 @@ export default function CampaignCard({ campaign, onEdit, onStart, onPause, onSto
               className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50"
             >
               {starting ? 'Starting…' : 'Start'}
+            </button>
+            <button
+              onClick={async () => {
+                setSeqMsg('')
+                if (!token) { setSeqMsg('Please log in'); return }
+                try {
+                  setBulkStarting(true)
+                  const res = await fetch('http://localhost:3001/sequences/start-all', {
+                    method: 'POST',
+                    headers: {
+                      'Authorization': `Bearer ${token}`,
+                      'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                      clientId: campaign.client_id,
+                      campaignId: campaign.id,
+                      channel: 'email',
+                    })
+                  })
+                  const data = await res.json()
+                  if (!res.ok) throw new Error(data?.message || 'Failed to enqueue sequences')
+                  setSeqMsg(`Enqueued ${data.enqueued} leads (${data.steps_created} steps) for '${campaign.name}'`)
+                  await loadQueue()
+                } catch (e: any) {
+                  setSeqMsg(e.message)
+                } finally {
+                  setBulkStarting(false)
+                }
+              }}
+              disabled={bulkStarting}
+              className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50"
+            >
+              {bulkStarting ? 'Enqueuing…' : 'Start For All Leads'}
             </button>
           </div>
           {seqMsg && <div className="text-sm text-gray-700 mt-2">{seqMsg}</div>}

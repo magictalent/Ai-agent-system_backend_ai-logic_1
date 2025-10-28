@@ -22,4 +22,15 @@ export class SequencesController {
   async queue(@Body() body: { campaignId: string; limit?: number }) {
     return this.sequences.listQueueByCampaign(body.campaignId, body.limit || 5);
   }
+
+  // Enqueue sequences for all eligible leads for a campaign
+  @Post('start-all')
+  async startAll(@Body() body: { clientId: string; campaignId: string; channel?: 'email' | 'sms' | 'whatsapp'; limit?: number }) {
+    return this.sequences.startSequenceForAllLeads({
+      clientId: body.clientId,
+      campaignId: body.campaignId,
+      channel: body.channel || 'email',
+      limit: body.limit || 1000,
+    });
+  }
 }

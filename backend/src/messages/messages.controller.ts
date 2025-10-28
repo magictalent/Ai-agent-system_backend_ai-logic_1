@@ -1,4 +1,4 @@
-import { Controller, Get, Param, Request, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, Request, UseGuards } from '@nestjs/common';
 import { MessagesService } from './messages.service';
 import { SupabaseAuthGuard } from '../auth/supabase-auth.guard';
 
@@ -32,5 +32,20 @@ export class MessagesController {
   async getMessagesByLead(@Param('leadId') leadId: string, @Request() req) {
     const userId = req.user.id;
     return await this.messagesService.getMessagesByLead(leadId, userId);
+  }
+
+  // DEV/testing helper: simulate an inbound reply from a lead
+  @Post('simulate')
+  async simulate(
+    @Body() body: { leadId: string; content: string; campaignId?: string },
+    @Request() req: any,
+  ) {
+    const userId = req.user.id;
+    return this.messagesService.simulateInboundMessage({
+      userId,
+      leadId: body.leadId,
+      content: body.content,
+      campaignId: body.campaignId,
+    });
   }
 }

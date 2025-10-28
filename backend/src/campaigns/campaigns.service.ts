@@ -45,24 +45,60 @@ export class CampaignsService {
   }
 
   async addCampaign(campaignData: CreateCampaignData & { user_id: string }) {
-    // Determine client name: if client_id not provided, use a default label
+    // Resolve a valid client_id and client_name
+    let resolvedClientId = campaignData.client_id?.trim();
     let clientName = 'My Business';
-    if (campaignData.client_id) {
+
+    if (resolvedClientId) {
       const { data: clientData, error: clientError } = await this.supabase
         .from('clients')
-        .select('name')
-        .eq('id', campaignData.client_id)
+        .select('id,name')
+        .eq('id', resolvedClientId)
         .eq('user_id', campaignData.user_id)
-        .single();
-      if (clientError) throw new Error('Client not found');
+        .maybeSingle();
+      if (clientError || !clientData) {
+        throw new Error('Client not found for this user');
+      }
       clientName = clientData.name;
+    } else {
+      // No client provided — pick the first client for user, or create a default one
+      const { data: firstClient } = await this.supabase
+        .from('clients')
+        .select('id,name')
+        .eq('user_id', campaignData.user_id)
+        .order('created_at', { ascending: true })
+        .limit(1)
+        .maybeSingle();
+      if (firstClient?.id) {
+        resolvedClientId = firstClient.id;
+        clientName = firstClient.name;
+      } else {
+        // Create a default client for this user
+        const defaultEmail = `${campaignData.user_id}@local`; // unique per user
+        const { data: created, error: createErr } = await this.supabase
+          .from('clients')
+          .insert([{ name: 'My Business', email: defaultEmail, crm_provider: 'mock', user_id: campaignData.user_id }])
+          .select('id,name')
+          .maybeSingle();
+        if (createErr || !created?.id) {
+          throw new Error(createErr?.message || 'Failed to create default client');
+        }
+        resolvedClientId = created.id;
+        clientName = created.name;
+      }
     }
+
+    // Ensure channel default
+    const channel = (campaignData.channel || 'email') as Campaign['channel'];
 
     const { data, error } = await this.supabase
       .from('campaigns')
       .insert([{
-        ...campaignData,
-        client_id: campaignData.client_id || campaignData.user_id,
+        user_id: campaignData.user_id,
+        client_id: resolvedClientId,
+        name: campaignData.name,
+        description: campaignData.description || null,
+        channel,
         client_name: clientName,
         leads_count: 0,
         appointments_count: 0,

@@ -131,4 +131,94 @@ export class MessagesService {
     if (error) throw new Error(error.message);
     return data || [];
   }
+
+  /** Insert a simulated inbound reply for a lead to help test UI and flows */
+  async simulateInboundMessage(opts: { userId: string; leadId: string; content: string; campaignId?: string }) {
+    const { userId, leadId, content } = opts;
+    if (!leadId || !content) throw new Error('leadId and content are required');
+
+    // Determine campaign to associate the message with
+    let campaignId = opts.campaignId || '';
+    let channel: 'email' | 'sms' | 'whatsapp' = 'email';
+    let leadName = 'Unknown Lead';
+    let leadEmail = '';
+    let leadPhone: string | null = null;
+
+    // Try to reuse the latest message's campaign/channel and lead details
+    try {
+      const { data: lastMsgs } = await this.supabase
+        .from('messages')
+        .select(`*, campaigns!inner(id,name,user_id)`) // ensure same user
+        .eq('lead_id', leadId)
+        .eq('campaigns.user_id', userId)
+        .order('created_at', { ascending: false })
+        .limit(1);
+      const last = Array.isArray(lastMsgs) && lastMsgs[0];
+      if (last) {
+        campaignId = campaignId || last.campaign_id;
+        channel = (last.channel as any) || channel;
+        leadName = last.lead_name || leadName;
+        leadEmail = last.lead_email || leadEmail;
+        leadPhone = last.lead_phone || leadPhone;
+      }
+    } catch {}
+
+    // If still no campaign, pick any campaign for this user (prefer active)
+    if (!campaignId) {
+      const { data: camp } = await this.supabase
+        .from('campaigns')
+        .select('id')
+        .eq('user_id', userId)
+        .order('status', { ascending: true })
+        .order('created_at', { ascending: true })
+        .limit(1)
+        .maybeSingle();
+      if (camp?.id) campaignId = camp.id;
+    }
+
+    // Pull missing lead details from leads table
+    if (!leadEmail || !leadName || !leadPhone) {
+      try {
+        const { data: leadRow } = await this.supabase
+          .from('leads')
+          .select('first_name,last_name,email,phone')
+          .eq('id', leadId)
+          .maybeSingle();
+        if (leadRow) {
+          const name = `${leadRow.first_name || ''} ${leadRow.last_name || ''}`.trim();
+          leadName = leadName === 'Unknown Lead' && name ? name : leadName;
+          leadEmail = leadEmail || leadRow.email || '';
+          leadPhone = leadPhone || leadRow.phone || null;
+        }
+      } catch {}
+    }
+
+    // Insert inbound message
+    const { data, error } = await this.supabase
+      .from('messages')
+      .insert({
+        campaign_id: campaignId || null,
+        lead_id: leadId,
+        lead_name: leadName,
+        lead_email: leadEmail,
+        lead_phone: leadPhone,
+        channel,
+        content,
+        status: 'replied',
+        direction: 'inbound',
+      })
+      .select()
+      .maybeSingle();
+    if (error) throw new Error(error.message);
+
+    // Optionally mark lead state
+    try {
+      await this.supabase
+        .from('leads')
+        .update({ status: 'replied', updated_at: new Date().toISOString() })
+        .eq('id', leadId);
+    } catch {}
+
+    return { ok: true, message: data };
+  }
 }

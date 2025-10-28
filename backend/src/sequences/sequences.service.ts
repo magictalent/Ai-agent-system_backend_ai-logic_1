@@ -98,6 +98,39 @@ export class SequencesService {
     return { created: rows.length };
   }
 
+  // Enqueue a sequence for all eligible leads for the given campaign/client
+  async startSequenceForAllLeads({ clientId, campaignId, channel = 'email', limit = 1000 }: { clientId: string; campaignId: string; channel?: 'email' | 'sms' | 'whatsapp'; limit?: number }) {
+    // Load leads from DB. For email channel, require a non-empty email.
+    const query = this.db.client
+      .from('leads')
+      .select('id,email,first_name,last_name,phone')
+      .order('updated_at', { ascending: false })
+      .limit(limit);
+    const { data: leads, error } = await query;
+    if (error) throw new Error(error.message);
+
+    const eligible = (leads || []).filter((l: any) => channel === 'email' ? !!(l.email && l.email.trim()) : true);
+    let enqueuedLeads = 0;
+    let totalSteps = 0;
+
+    for (const lead of eligible) {
+      // Skip if already queued for this campaign+lead
+      const { data: hasQueue } = await this.db.client
+        .from('sequence_queue')
+        .select('id')
+        .eq('lead_id', lead.id)
+        .eq('campaign_id', campaignId)
+        .limit(1);
+      if (Array.isArray(hasQueue) && hasQueue.length) continue;
+
+      const res = await this.startSequence({ clientId, campaignId, leadId: lead.id, channel });
+      enqueuedLeads += 1;
+      totalSteps += res.created || 0;
+    }
+
+    return { leads_found: eligible.length, enqueued: enqueuedLeads, steps_created: totalSteps };
+  }
+
   // Process up to N pending items past due
   async tick(limit = 10) {
     // Fetch due items

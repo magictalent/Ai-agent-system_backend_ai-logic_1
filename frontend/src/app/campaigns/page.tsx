@@ -123,6 +123,27 @@ export default function CampaignsPage() {
       setCampaigns(prev => prev.map(c =>
         c.id === campaignId ? { ...c, status: 'active' as const } : c
       ))
+
+      // After marking campaign active, enqueue sequences for all leads for this campaign's client
+      const camp = campaigns.find(c => c.id === campaignId)
+      if (camp) {
+        try {
+          const bulk = await fetch('http://localhost:3001/sequences/start-all', {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ clientId: camp.client_id, campaignId: camp.id, channel: 'email' })
+          })
+          const data = await bulk.json()
+          if (!bulk.ok) throw new Error(data?.message || 'Failed to enqueue sequences')
+          // Surface a lightweight toast via error banner for now
+          setError(`Enqueued ${data.enqueued} leads (${data.steps_created} steps) for '${camp.name}'`)
+        } catch (e: any) {
+          setError(e.message)
+        }
+      }
     } catch (err: any) {
       setError(err.message)
     }
@@ -500,4 +521,3 @@ export default function CampaignsPage() {
     </div>
   )
 }
-
