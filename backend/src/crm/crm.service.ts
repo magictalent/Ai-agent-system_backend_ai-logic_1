@@ -160,67 +160,92 @@ export class CrmService {
     opts?: { archived?: boolean; excludeSamples?: boolean; excludeEmail?: string },
   ) {
     const includeArchived = opts?.archived === undefined ? true : !!opts?.archived;
-    // Use paginated fetch to retrieve all possible leads
-    // Fix: Omit excludeSamples and excludeEmail when calling getLeads (they are not valid props for getLeads)
-    const leads = await this.getLeads(provider, userId, {
-      archived: includeArchived,
-    });
-    let inserted = 0;
-    let updated = 0;
-    const failures: any[] = [];
-
-    // Filtering logic after fetching if needed
-    let filteredLeads = leads;
-    if (opts?.excludeSamples) {
-      filteredLeads = filteredLeads.filter(
-        (lead: any) =>
-          // crude filter: sample emails
-          !(lead.email && lead.email.match(/sample|test|fake/i))
-      );
-    }
-    if (opts?.excludeEmail) {
-      filteredLeads = filteredLeads.filter(
-        (lead: any) =>
-          !lead.email || lead.email.toLowerCase() !== opts.excludeEmail?.toLowerCase()
-      );
+    let leads: any[] = [];
+    try {
+      // Fetch all possible leads from provider (active + optionally archived)
+      leads = await this.getLeads(provider, userId, { archived: includeArchived });
+    } catch (err) {
+      console.error('Error fetching leads from provider:', err);
+      return { total: 0, inserted: 0, updated: 0, failed: 0, failures: [{ error: '' + err }] };
     }
 
-    for (const lead of filteredLeads) {
-      // Simple upsert by email if present, else by id
-      const key = lead.email ? { email: lead.email } : { id: lead.id };
-      try {
-        // Try find existing
-        let existing: any | null = null;
-        try {
-          existing = await this.db.findOne('leads', key as any);
-        } catch (e) {
-          existing = null;
-        }
-
-        const payload = {
-          id: lead.id,
-          first_name: lead.firstname || '',
-          last_name: lead.lastname || '',
-          email: lead.email || '',
-          phone: lead.phone || '',
-          status: existing?.status || 'new',
-          updated_at: new Date().toISOString(),
-          created_at: existing?.created_at || new Date().toISOString(),
-        };
-
-        if (existing) {
-          await this.db.update('leads', key as any, payload);
-          updated++;
-        } else {
-          await this.db.insert('leads', payload);
-          inserted++;
-        }
-      } catch (e: any) {
-        failures.push({ id: lead.id, email: lead.email, error: e?.message || 'unknown' });
+    // Optional filtering after fetch
+    let filteredLeads = leads || [];
+    try {
+      if (opts?.excludeSamples) {
+        filteredLeads = filteredLeads.filter((lead: any) => !(lead.email && lead.email.match(/sample|test|fake/i)));
       }
+      if (opts?.excludeEmail) {
+        filteredLeads = filteredLeads.filter((lead: any) => !lead.email || lead.email.toLowerCase() !== opts.excludeEmail!.toLowerCase());
+      }
+    } catch (err) {
+      console.error('Error filtering leads:', err);
+      return { total: leads.length, inserted: 0, updated: 0, failed: leads.length, failures: [{ error: '' + err }] };
     }
 
-    return { total: filteredLeads.length, inserted, updated, failed: failures.length, failures };
+    if (filteredLeads.length === 0) {
+      console.warn('No leads to import after filtering.');
+      return { total: 0, inserted: 0, updated: 0, failed: 0, failures: [] };
+    }
+
+    // Prepare rows for bulk upsert by id. Avoid setting status/created_at so defaults are preserved for existing rows.
+    let rows: any[] = [];
+    try {
+      rows = filteredLeads.map((l: any) => ({
+        id: l.id,
+        first_name: l.firstname || '',
+        last_name: l.lastname || '',
+        email: l.email || '',
+        phone: l.phone || '',
+        updated_at: new Date().toISOString(),
+      }));
+    } catch (err) {
+      console.error('Error mapping leads to DB rows:', err);
+      throw err;
+    }
+
+    // Compute existing ids to report inserted vs updated
+    const ids = rows.map((r) => r.id);
+    let existingIds: string[] = [];
+    try {
+      const { data, error } = await this.db.client.from('leads').select('id').in('id', ids);
+      if (error) {
+        console.error('Error selecting existing lead ids from DB:', error);
+      }
+      if (!error && Array.isArray(data)) existingIds = data.map((d: any) => d.id);
+    } catch (err) {
+      console.error('Exception while querying existing lead ids:', err);
+    }
+    const existingSet = new Set(existingIds);
+    const wouldUpdate = rows.filter((r) => existingSet.has(r.id)).length;
+    const wouldInsert = rows.length - wouldUpdate;
+
+    let upsertError: any = null;
+    try {
+      const result = await this.db.client.from('leads').upsert(rows, { onConflict: 'id' });
+      upsertError = result.error;
+      if (upsertError) {
+        console.error('Error during leads upsert:', upsertError);
+        return {
+          total: rows.length,
+          inserted: 0,
+          updated: 0,
+          failed: rows.length,
+          failures: [{ error: upsertError.message }]
+        };
+      }
+    } catch (err) {
+      console.error('Exception during leads upsert:', err);
+      return {
+        total: rows.length,
+        inserted: 0,
+        updated: 0,
+        failed: rows.length,
+        failures: [{ error: '' + err }]
+      };
+    }
+
+    return { total: rows.length, inserted: wouldInsert, updated: wouldUpdate, failed: 0, failures: [] };
   }
 
   // DEV utility: remove all leads to re-test imports
