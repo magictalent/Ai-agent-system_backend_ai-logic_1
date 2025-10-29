@@ -141,19 +141,12 @@ export class CampaignsController {
   @Post(':id/start')
   async startCampaign(@Param('id') id: string, @Request() req) {
     const userId = req.user.id;
-    console.log('🚀 Starting campaign with AI automation:', id);
+    console.log('🚀 Starting campaign:', id);
     
     try {
-      // Start the campaign in database
+      // Mark campaign active in DB; sequencing is handled by client calling /sequences/start-all
       const campaign = await this.campaignsService.startCampaign(id, userId);
-      
-      // Start AI automation
-      const aiResult = await this.aiCampaignService.startAiCampaign(id, userId);
-      
-      return {
-        ...campaign,
-        ai_automation: aiResult
-      };
+      return campaign;
     } catch (error) {
       console.error('❌ Error starting AI campaign:', error);
       throw error;

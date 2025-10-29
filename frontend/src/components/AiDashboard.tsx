@@ -23,6 +23,7 @@ interface AiDashboardData {
     name: string
     status: string
     channel: string
+    tone?: 'friendly' | 'professional' | 'casual'
     leads_count: number
     appointments_count: number
     response_rate: number
@@ -169,9 +170,16 @@ export default function AiDashboard() {
             </div>
 
             <div className="mb-3">
-              <span className="inline-flex items-center px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800">
+              <span className="inline-flex items-center px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800 mr-2">
                 {campaign.channel.toUpperCase()}
               </span>
+              {campaign.tone && (
+                <span className={`inline-flex items-center px-2 py-1 text-xs font-medium rounded-full ${
+                  campaign.tone === 'professional' ? 'bg-blue-100 text-blue-800' : campaign.tone === 'casual' ? 'bg-purple-100 text-purple-800' : 'bg-green-100 text-green-800'
+                }`}>
+                  {campaign.tone.charAt(0).toUpperCase() + campaign.tone.slice(1)}
+                </span>
+              )}
             </div>
 
             <div className="grid grid-cols-3 gap-4 mb-4">

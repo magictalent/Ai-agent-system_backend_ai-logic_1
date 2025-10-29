@@ -97,7 +97,18 @@ export default function OnboardingPage() {
         <div className="text-lg font-semibold">3) Verify Email Sender</div>
         <div className="text-sm text-gray-600">Make sure SMTP is configured so the AI can send emails.</div>
         <div className="flex gap-3 items-center flex-wrap">
-          <button onClick={verifyEmail} disabled={checkingEmail} className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50">
+          <button
+            onClick={() => {
+              try {
+                verifyEmail()
+              } catch (error) {
+                console.error('Error verifying email sender:', error)
+                throw error // Preserve normal error flow
+              }
+            }}
+            disabled={checkingEmail}
+            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
+          >
             {checkingEmail ? 'Checking…' : 'Verify SMTP'}
           </button>
           {emailStatus && <span className="text-sm text-gray-700">{emailStatus}</span>}

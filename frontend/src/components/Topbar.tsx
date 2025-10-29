@@ -9,7 +9,7 @@ export default function Topbar() {
   const pathname = usePathname();
 
   return (
-    <header className="h-14 bg-gradient-to-r from-[#3B0F2A] to-[#4C1C3F] border-b border-[#5A314F] flex items-center px-2 md:px-4 justify-between sticky top-0 z-40">
+    <header className="h-16 bg-gradient-to-r from-[#3B0F2A] to-[#4C1C3F] border-b border-[#5A314F] flex items-center px-2 md:px-4 justify-between sticky top-0 z-40">
       {/* Left: Logo */}
       <div className="flex items-center gap-2 md:gap-4 min-w-[160px]">
         {/* Mobile menu button */}

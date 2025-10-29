@@ -1,26 +1,20 @@
 "use client"
 
 import { useEffect, useState } from 'react'
-import { useSearchParams, useRouter } from 'next/navigation'
+import { useRouter } from 'next/navigation'
 import { Campaign, CreateCampaignData } from '@/types/campaign'
-import { Client } from '@/types/client'
 import CampaignCard from '@/components/CampaignCard'
-import CampaignForm from '@/components/CampaignForm'
 import { useAuth } from '@/contexts/AuthContext'
 
 export default function CampaignsPage() {
   const [campaigns, setCampaigns] = useState<Campaign[]>([])
-  const [clients, setClients] = useState<Client[]>([])
   const [loading, setLoading] = useState(true)
-  const [showCreatePanel, setShowCreatePanel] = useState(false)
-  const [editing, setEditing] = useState<Campaign | null>(null)
   const [searchTerm, setSearchTerm] = useState('')
   const [filterStatus, setFilterStatus] = useState<string>('all')
-  const [filterClientId, setFilterClientId] = useState<string>('all')
   const [filterChannel, setFilterChannel] = useState<string>('all')
+  const [filterTone, setFilterTone] = useState<string>('all')
   const [error, setError] = useState('')
   const { user, token } = useAuth()
-  const searchParams = useSearchParams()
   const router = useRouter()
 
   const fetchData = async () => {
@@ -28,39 +22,15 @@ export default function CampaignsPage() {
       setLoading(true)
       setError('')
       if (!token) { setError('Missing user token. Please re-login.'); setLoading(false); return }
-      const [camps, clis] = await Promise.all([
-        fetch('http://localhost:3001/campaigns', { headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' } }),
-        fetch('http://localhost:3001/clients', { headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' } })
-      ])
+      const camps = await fetch('http://localhost:3001/campaigns', { headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' } })
       if (!camps.ok) throw new Error(await camps.text())
-      if (!clis.ok) throw new Error(await clis.text())
       setCampaigns(await camps.json())
-      setClients(await clis.json())
     } catch (e: any) {
       setError(e?.message || 'Failed to load data')
     } finally { setLoading(false) }
   }
 
-  const handleCreateCampaign = async (campaignData: CreateCampaignData, options?: { startNow?: boolean }) => {
-    try {
-      const response = await fetch('http://localhost:3001/campaigns/add', { method: 'POST', headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' }, body: JSON.stringify(campaignData) })
-      if (!response.ok) throw new Error((await response.text()) || 'Failed to create campaign')
-      const created = await response.json()
-      setCampaigns(prev => [created, ...prev])
-      if (options?.startNow && created?.id) await handleStartCampaign(created.id)
-    } catch (e: any) { setError(e?.message || 'Failed to create campaign'); throw e }
-  }
-
-  const handleUpdateCampaign = async (campaignData: CreateCampaignData) => {
-    if (!editing) return
-    try {
-      const res = await fetch(`http://localhost:3001/campaigns/${editing.id}`, { method: 'PUT', headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' }, body: JSON.stringify(campaignData) })
-      if (!res.ok) throw new Error((await res.text()) || 'Failed to update campaign')
-      const updated = await res.json()
-      setCampaigns(prev => prev.map(c => c.id === updated.id ? updated : c))
-      setEditing(null)
-    } catch (e: any) { setError(e?.message || 'Failed to update campaign'); throw e }
-  }
+  // Creation and editing moved to /campaigns/new
 
   const handleStartCampaign = async (campaignId: string) => {
     try {
@@ -70,7 +40,7 @@ export default function CampaignsPage() {
       const camp = campaigns.find(c => c.id === campaignId)
       if (camp) {
         try {
-          const bulk = await fetch('http://localhost:3001/sequences/start-all', { method: 'POST', headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ clientId: camp.client_id, campaignId: camp.id, channel: 'email' }) })
+          const bulk = await fetch('http://localhost:3001/sequences/start-all', { method: 'POST', headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ clientId: camp.client_id, campaignId: camp.id, channel: 'email', tone: (camp as any).tone || 'friendly' }) })
           const data = await bulk.json()
           if (!bulk.ok) throw new Error(data?.message || 'Failed to enqueue sequences')
           setError(`Enqueued ${data.enqueued} leads (${data.steps_created} steps) for '${camp.name}'`)
@@ -88,24 +58,20 @@ export default function CampaignsPage() {
   const handleDeleteCampaign = async (campaignId: string) => {
     try { if (!confirm('Delete this campaign? This cannot be undone.')) return; const res = await fetch(`http://localhost:3001/campaigns/${campaignId}`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' } }); if (!res.ok) throw new Error((await res.text()) || 'Failed to delete campaign'); setCampaigns(prev => prev.filter(c => c.id !== campaignId)) } catch (e: any) { setError(e?.message || 'Failed to delete') }
   }
-  const handleEditCampaign = (campaign: Campaign) => { setEditing(campaign) }
+  const handleEditCampaign = (campaign: Campaign) => { router.push(`/campaigns/new?edit=${campaign.id}`) }
 
   const filteredCampaigns = campaigns.filter(c => {
     const q = searchTerm.toLowerCase()
     const byText = c.name.toLowerCase().includes(q) || c.client_name.toLowerCase().includes(q)
     const byStatus = filterStatus === 'all' || c.status === filterStatus
-    const byClient = filterClientId === 'all' || c.client_id === filterClientId
     const byChannel = filterChannel === 'all' || c.channel === filterChannel
-    return byText && byStatus && byClient && byChannel
+    const byTone = filterTone === 'all' || ((c as any).tone || 'friendly') === filterTone
+    return byText && byStatus && byChannel && byTone
   })
 
   useEffect(() => { if (user && token) fetchData() }, [user, token])
 
-  // Open create panel when `?new=1` is present
-  useEffect(() => {
-    const isNew = searchParams?.get('new')
-    if (isNew && !showCreatePanel && !editing) setShowCreatePanel(true)
-  }, [searchParams, showCreatePanel, editing])
+  // Inline create panel removed; use /campaigns/new instead
 
   if (!user) {
     return (
@@ -128,17 +94,9 @@ export default function CampaignsPage() {
               <h1 className="text-3xl font-bold text-gray-900">Campaigns</h1>
               <p className="mt-2 text-gray-600">Manage your AI automation campaigns</p>
             </div>
-            <button onClick={() => {
-              const next = !showCreatePanel
-              setShowCreatePanel(next)
-              try {
-                const url = new URL(window.location.href)
-                if (next) url.searchParams.set('new', '1'); else url.searchParams.delete('new')
-                router.replace(url.pathname + (url.search ? url.search : ''))
-              } catch {}
-            }} className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors flex items-center space-x-2">
+            <button onClick={() => router.push('/campaigns/new')} className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors flex items-center space-x-2">
               <img src="/icons/plus.png" alt="New" className="w-8 h-7" />
-              <span>{showCreatePanel ? 'Hide Form' : 'New Campaign'}</span>
+              <span>New Campaign</span>
             </button>
           </div>
         </div>
@@ -161,13 +119,15 @@ export default function CampaignsPage() {
               <option value="paused">Paused</option>
               <option value="completed">Completed</option>
             </select>
-            <select value={filterClientId} onChange={(e) => setFilterClientId(e.target.value)} className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
-              <option value="all">All Clients</option>
-              {clients.map(c => (<option key={c.id} value={c.id}>{c.name}</option>))}
-            </select>
             <select value={filterChannel} onChange={(e) => setFilterChannel(e.target.value)} className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
               <option value="all">All Channels</option>
               <option value="email">Email</option>
+            </select>
+            <select value={filterTone} onChange={(e) => setFilterTone(e.target.value)} className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+              <option value="all">All Tones</option>
+              <option value="friendly">Friendly</option>
+              <option value="professional">Professional</option>
+              <option value="casual">Casual</option>
             </select>
           </div>
         </div>
@@ -215,14 +175,7 @@ export default function CampaignsPage() {
                 <h3 className="text-lg font-medium text-gray-900 mb-2">No campaigns found</h3>
                 <p className="text-gray-500 mb-6">{searchTerm || filterStatus !== 'all' ? 'Try adjusting your search or filter criteria' : 'Get started by creating your first campaign'}</p>
                 {!searchTerm && filterStatus === 'all' && (
-                  <button onClick={() => {
-                    setShowCreatePanel(true)
-                    try {
-                      const url = new URL(window.location.href)
-                      url.searchParams.set('new', '1')
-                      router.replace(url.pathname + (url.search ? url.search : ''))
-                    } catch {}
-                  }} className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors">Create Your First Campaign</button>
+                  <button onClick={() => router.push('/campaigns/new')} className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors">Create Your First Campaign</button>
                 )}
               </div>
             ) : (
@@ -234,30 +187,7 @@ export default function CampaignsPage() {
             )}
           </div>
 
-          <div className="lg:col-span-1">
-            {(showCreatePanel || editing) ? (
-              <CampaignForm
-                mode={editing ? 'edit' : 'create'}
-                clients={clients.map(c => ({ id: c.id, name: c.name }))}
-                initial={editing ? { client_id: editing.client_id, name: editing.name, description: editing.description, channel: editing.channel } : undefined}
-                onSubmit={async (data, opts) => {
-                  if (editing) {
-                    await handleUpdateCampaign(data)
-                  } else {
-                    await handleCreateCampaign(data, opts)
-                    setShowCreatePanel(false)
-                  }
-                }}
-                onCancel={() => { setEditing(null); setShowCreatePanel(false) }}
-              />
-            ) : (
-              <div className="bg-white rounded-2xl border border-dashed shadow-sm p-6 text-center text-gray-600">
-                <div className="font-semibold mb-1">Create a new campaign</div>
-                <div className="text-sm mb-4">Pick a client, set details, and start immediately.</div>
-                <button onClick={() => setShowCreatePanel(true)} className="px-5 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">Open Form</button>
-              </div>
-            )}
-          </div>
+          {/* Right column removed: creation moved to /campaigns/new */}
         </div>
       </div>
     </div>

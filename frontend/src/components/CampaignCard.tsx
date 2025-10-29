@@ -11,11 +11,12 @@ interface CampaignCardProps {
   onPause: (campaignId: string) => void
   onStop: (campaignId: string) => void
   onDelete: (campaignId: string) => void
+  highlighted?: boolean
 }
 
-export default function CampaignCard({ campaign, onEdit, onStart, onPause, onStop, onDelete }: CampaignCardProps) {
-  const [showActions, setShowActions] = useState(false)
+export default function CampaignCard({ campaign, onEdit, onStart, onPause, onStop, onDelete, highlighted = false }: CampaignCardProps) {
   const { token } = useAuth()
+  const [showActions, setShowActions] = useState(false)
   const [showSequence, setShowSequence] = useState(false)
   const [leadEmail, setLeadEmail] = useState('')
   const [queue, setQueue] = useState<any[]>([])
@@ -24,217 +25,117 @@ export default function CampaignCard({ campaign, onEdit, onStart, onPause, onSto
   const [bulkStarting, setBulkStarting] = useState(false)
   const [seqMsg, setSeqMsg] = useState('')
 
+  const channelConfig = CHANNEL_CONFIGS.find(c => c.id === campaign.channel)
+  const statusConfig = STATUS_CONFIGS[campaign.status]
+  const tone = (campaign as any).tone as ('friendly'|'professional'|'casual'|undefined)
+
+  const toneBadge = tone ? (
+    <span className={`px-3 py-1 text-xs font-semibold rounded-full ${
+      tone === 'professional' ? 'bg-blue-100 text-blue-800' : tone === 'casual' ? 'bg-purple-100 text-purple-800' : 'bg-green-100 text-green-800'
+    }`} title="Tone">
+      {tone.charAt(0).toUpperCase() + tone.slice(1)}
+    </span>
+  ) : null
+
+  const handleAction = (action: string) => {
+    setShowActions(false)
+    switch (action) {
+      case 'start': return onStart(campaign.id)
+      case 'pause': return onPause(campaign.id)
+      case 'stop': return onStop(campaign.id)
+      case 'edit': return onEdit(campaign)
+      case 'delete': return onDelete(campaign.id)
+    }
+  }
+
   const loadQueue = async () => {
     if (!token) return
     try {
       setLoadingQueue(true)
       const items = await loadQueueInternal(campaign.id, token)
       setQueue(items)
-    } catch (e) {
-      // ignore for now
-    } finally {
-      setLoadingQueue(false)
-    }
+    } finally { setLoadingQueue(false) }
   }
 
-  useEffect(() => {
-    if (showSequence) {
-      loadQueue()
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [showSequence])
+  useEffect(() => { if (showSequence) loadQueue() }, [showSequence])
 
-  const channelConfig = CHANNEL_CONFIGS.find(c => c.id === campaign.channel)
-  const statusConfig = STATUS_CONFIGS[campaign.status]
-
-  const handleAction = (action: string) => {
-    setShowActions(false)
-    switch (action) {
-      case 'start':
-        onStart(campaign.id)
-        break
-      case 'pause':
-        onPause(campaign.id)
-        break
-      case 'stop':
-        onStop(campaign.id)
-        break
-      case 'edit':
-        onEdit(campaign)
-        break
-      case 'delete':
-        onDelete(campaign.id)
-        break
+  const ActionPrimary = () => {
+    if (campaign.status === 'draft' || campaign.status === 'paused') {
+      return (
+        <button onClick={() => handleAction('start')} className="px-3 py-1.5 rounded-md text-sm bg-emerald-600 text-white hover:bg-emerald-700">
+          Start
+        </button>
+      )
     }
-  }
-
-  const getActionButton = () => {
-    switch (campaign.status) {
-      case 'draft':
-        return (
-          <button
-            onClick={() => handleAction('start')}
-            className="flex items-center space-x-2 px-4 py-2 bg-green-100 text-green-800 rounded-lg hover:bg-green-200 transition-colors"
-          >
-            <span>
-              <img src="/icons/start.png" alt="Start" className="w-5 h-5 inline" />
-            </span>
-            <span>Start</span>
-          </button>
-        )
-      case 'active':
-        return (
-          <button
-            onClick={() => handleAction('pause')}
-            className="flex items-center space-x-2 px-4 py-2 bg-yellow-100 text-yellow-800 rounded-lg hover:bg-yellow-200 transition-colors"
-          >
-            <span>
-              <img src="/icons/pause.png" alt="Pause" className="w-5 h-5 inline" />
-            </span>
-            <span>Pause</span>
-          </button>
-        )
-      case 'paused':
-        return (
-          <button
-            onClick={() => handleAction('start')}
-            className="flex items-center space-x-2 px-4 py-2 bg-green-100 text-green-800 rounded-lg hover:bg-green-200 transition-colors"
-          >
-            <span>
-              <img src="/icons/start.png" alt="Start" className="w-5 h-5 inline" />
-            </span>
-            <span>Start</span>
-          </button>
-        )
-      default:
-        return null
+    if (campaign.status === 'active') {
+      return (
+        <button onClick={() => handleAction('pause')} className="px-3 py-1.5 rounded-md text-sm bg-amber-500 text-white hover:bg-amber-600">
+          Pause
+        </button>
+      )
     }
+    return null
   }
 
   return (
-    <div className="bg-white rounded-lg shadow-lg p-6 hover:shadow-xl transition-shadow">
+    <div className={`relative bg-white rounded-xl shadow p-6 hover:shadow-lg transition-shadow ${highlighted ? 'ring-2 ring-violet-500' : ''}`}>
       {/* Header */}
-      <div className="flex justify-between items-start mb-4">
-        <div className="flex-1">
-          <h3 className="text-lg font-semibold text-gray-900 mb-1">{campaign.name}</h3>
-          <p className="text-sm text-gray-600">{campaign.client_name}</p>
+      <div className="flex items-start justify-between mb-4">
+        <div className="min-w-0">
+          <div className="text-lg font-semibold text-gray-900 truncate">{campaign.name}</div>
+          <div className="text-sm text-gray-600 truncate">{campaign.client_name}</div>
         </div>
-        <div className="flex items-center space-x-2">
-          <span className={`px-3 py-1 text-xs font-semibold rounded-full ${statusConfig.color}`}>
-            {statusConfig.label}
-          </span>
+        <div className="flex items-center gap-2">
+          <span className={`px-3 py-1 text-xs font-semibold rounded-full ${statusConfig.color}`}>{statusConfig.label}</span>
+          {toneBadge}
           <div className="relative">
-            <button
-              onClick={() => setShowActions(!showActions)}
-              className="p-1 hover:bg-gray-100 rounded-full"
-            >
-              <span className="text-gray-400">⋯</span>
+            <button onClick={() => setShowActions(s => !s)} className="p-1.5 hover:bg-gray-100 rounded-full" aria-label="More actions">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-5 h-5 text-gray-500"><path d="M6 10a2 2 0 11-4 0 2 2 0 014 0zm6 0a2 2 0 11-4 0 2 2 0 014 0zm6 0a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
             </button>
             {showActions && (
-              <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 z-10">
-                <div className="py-1">
-                  <button
-                    onClick={() => handleAction('edit')}
-                    className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                  >
-                    ✏️ Edit Campaign
-                  </button>
-                  <button
-                    onClick={() => handleAction('start')}
-                    className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                  >
-                    ▶️ Start Campaign
-                  </button>
-                  <button
-                    onClick={() => handleAction('pause')}
-                    className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                  >
-                    ⏸️ Pause Campaign
-                  </button>
-                  <button
-                    onClick={() => handleAction('stop')}
-                    className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50"
-                  >
-                    🛑 Stop Campaign
-                  </button>
-                </div>
+              <div className="absolute right-0 mt-2 w-44 bg-white border border-gray-200 rounded-md shadow z-10">
+                <button onClick={() => handleAction('edit')} className="block w-full text-left px-3 py-2 text-sm hover:bg-gray-50">Edit Campaign</button>
+                <button onClick={() => handleAction('start')} className="block w-full text-left px-3 py-2 text-sm hover:bg-gray-50">Start Campaign</button>
+                <button onClick={() => handleAction('pause')} className="block w-full text-left px-3 py-2 text-sm hover:bg-gray-50">Pause Campaign</button>
+                <button onClick={() => handleAction('stop')} className="block w-full text-left px-3 py-2 text-sm text-red-600 hover:bg-red-50">Stop Campaign</button>
               </div>
             )}
           </div>
         </div>
       </div>
 
-      {/* Channel */}
+      {/* Channel badge */}
       <div className="mb-4">
-        <span className={`inline-flex items-center px-3 py-1 text-xs font-semibold rounded-full ${channelConfig?.color}`}>
+        <span className={`inline-flex items-center px-3 py-1 text-xs font-medium rounded-full ${channelConfig?.color}`}>
           {channelConfig?.icon} {channelConfig?.name}
         </span>
       </div>
 
       {/* Metrics */}
       <div className="grid grid-cols-3 gap-4 mb-6">
-        <div className="text-center">
-          <div className="flex items-center justify-center mb-1">
-            <img src="/icons/users.png" alt="Leads" className="w-5 h-5" />
-          </div>
-          <div className="text-2xl font-bold text-gray-900">{campaign.leads_count}</div>
-          <div className="text-xs text-gray-500">Leads</div>
+        <Metric label="Leads" icon="/icons/users.png" value={campaign.leads_count} />
+        <Metric label="Appointments" icon="/icons/calendar.png" value={campaign.appointments_count} />
+        <Metric label="Response" icon="/icons/sms.png" value={`${campaign.response_rate}%`} />
+      </div>
+
+      {/* Footer actions - refreshed styling */}
+      <div className="mt-2 pt-4 border-t flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <ActionPrimary />
+          <button onClick={() => onEdit(campaign)} className="px-3 py-1.5 rounded-md text-sm border border-gray-300 text-gray-700 hover:bg-gray-50">Edit</button>
         </div>
-        <div className="text-center">
-          <div className="flex items-center justify-center mb-1">
-            <img src="/icons/calendar.png" alt="Appointments" className="w-5 h-5" />
-          </div>
-          <div className="text-2xl font-bold text-gray-900">{campaign.appointments_count}</div>
-          <div className="text-xs text-gray-500">Appointments</div>
-        </div>
-        <div className="text-center">
-          <div className="flex items-center justify-center mb-1">
-            <img src="/icons/sms.png" alt="Response" className="w-5 h-5" />
-          </div>
-          <div className="text-2xl font-bold text-gray-900">{campaign.response_rate}%</div>
-          <div className="text-xs text-gray-500">Response</div>
+        <div className="flex items-center gap-2">
+          <button onClick={() => setShowSequence(s => !s)} className="px-3 py-1.5 rounded-md text-sm border border-indigo-300 text-indigo-700 hover:bg-indigo-50">Sequence</button>
+          <button onClick={() => onDelete(campaign.id)} className="px-3 py-1.5 rounded-md text-sm border border-red-200 text-red-600 hover:bg-red-50">Delete</button>
         </div>
       </div>
 
-      {/* Action Buttons */}
-      <div className="flex space-x-3">
-        {getActionButton()}
-        <button
-          onClick={() => handleAction('edit')}
-          className="flex items-center space-x-2 px-4 py-2 bg-blue-100 text-blue-800 rounded-lg hover:bg-blue-200 transition-colors"
-        >
-          <img src="/icons/edit.png" alt="Edit" className="w-5 h-5" />
-          <span>Edit</span>
-        </button>
-        <button
-          onClick={() => setShowSequence(s => !s)}
-          className="flex items-center space-x-2 px-4 py-2 bg-indigo-100 text-indigo-800 rounded-lg hover:bg-indigo-200 transition-colors"
-        >
-          <img src="/icons/start.png" alt="Seq" className="w-5 h-5" />
-          <span>Sequence</span>
-        </button>
-        <button
-          onClick={() => handleAction('delete')}
-          className="flex items-center space-x-2 px-4 py-2 bg-red-100 text-red-800 rounded-lg hover:bg-red-200 transition-colors"
-        >
-          <span>Delete</span>
-        </button>
-      </div>
-
+      {/* Sequence tools */}
       {showSequence && (
-        <div className="mt-4 border-t pt-4">
-          <h4 className="font-semibold text-gray-900 mb-2">Start Sequence</h4>
-          <div className="flex flex-col sm:flex-row gap-2 items-start sm:items-end">
-            <div className="flex-1">
-              <label className="block text-sm text-gray-600 mb-1">Lead Email</label>
-              <input
-                type="email"
-                value={leadEmail}
-                onChange={(e) => setLeadEmail(e.target.value)}
-                placeholder="lead@example.com"
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
+        <div className="mt-5 rounded-lg border bg-gray-50 p-4">
+          <div className="text-sm text-gray-700 mb-3">Start sequence for a single lead (email)</div>
+          <div className="flex gap-2 mb-3">
+            <input value={leadEmail} onChange={(e)=>setLeadEmail(e.target.value)} placeholder="lead@company.com" className="flex-1 px-3 py-2 border rounded" />
             <button
               onClick={async () => {
                 setSeqMsg('')
@@ -243,34 +144,18 @@ export default function CampaignCard({ campaign, onEdit, onStart, onPause, onSto
                 try {
                   setStarting(true)
                   const res = await fetch('http://localhost:3001/sequences/start', {
-                    method: 'POST',
-                    headers: {
-                      'Authorization': `Bearer ${token}`,
-                      'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                      clientId: campaign.client_id,
-                      campaignId: campaign.id,
-                      leadEmail,
-                      channel: 'email',
-                    })
+                    method: 'POST', headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ clientId: campaign.client_id, campaignId: campaign.id, leadEmail, channel: 'email' })
                   })
                   const data = await res.json()
                   if (!res.ok) throw new Error(data?.message || 'Failed to start sequence')
                   setSeqMsg(`Queued ${data.created} steps`)
-                  // refresh queue
                   await loadQueue()
-                } catch (e: any) {
-                  setSeqMsg(e.message)
-                } finally {
-                  setStarting(false)
-                }
+                } catch (e:any) { setSeqMsg(e.message) } finally { setStarting(false) }
               }}
               disabled={starting}
-              className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50"
-            >
-              {starting ? 'Starting…' : 'Start'}
-            </button>
+              className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 disabled:opacity-50"
+            >{starting ? 'Starting…' : 'Start'}</button>
             <button
               onClick={async () => {
                 setSeqMsg('')
@@ -278,86 +163,53 @@ export default function CampaignCard({ campaign, onEdit, onStart, onPause, onSto
                 try {
                   setBulkStarting(true)
                   const res = await fetch('http://localhost:3001/sequences/start-all', {
-                    method: 'POST',
-                    headers: {
-                      'Authorization': `Bearer ${token}`,
-                      'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                      clientId: campaign.client_id,
-                      campaignId: campaign.id,
-                      channel: 'email',
-                    })
+                    method: 'POST', headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ clientId: campaign.client_id, campaignId: campaign.id, channel: 'email' })
                   })
                   const data = await res.json()
                   if (!res.ok) throw new Error(data?.message || 'Failed to enqueue sequences')
-                  setSeqMsg(`Enqueued ${data.enqueued} leads (${data.steps_created} steps) for '${campaign.name}'`)
+                  setSeqMsg(`Enqueued ${data.enqueued} leads (${data.steps_created} steps) for '${campaign.name}'. Sending first emails…`)
+                  try { await fetch('http://localhost:3001/sequences/tick', { method: 'POST', headers: { 'Authorization': `Bearer ${token}` } }) } catch {}
                   await loadQueue()
-                } catch (e: any) {
-                  setSeqMsg(e.message)
-                } finally {
-                  setBulkStarting(false)
-                }
+                } catch (e:any) { setSeqMsg(e.message) } finally { setBulkStarting(false) }
               }}
               disabled={bulkStarting}
-              className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50"
-            >
-              {bulkStarting ? 'Enqueuing…' : 'Start For All Leads'}
-            </button>
+              className="px-4 py-2 bg-emerald-600 text-white rounded-md hover:bg-emerald-700 disabled:opacity-50"
+            >{bulkStarting ? 'Enqueuing…' : 'Start For All'}</button>
           </div>
-          {seqMsg && <div className="text-sm text-gray-700 mt-2">{seqMsg}</div>}
-
-          <div className="mt-4">
+          {seqMsg && <div className="text-sm text-gray-700 mb-2">{seqMsg}</div>}
           <div className="flex items-center justify-between mb-2">
             <h5 className="font-medium text-gray-800">Queued Steps</h5>
-            <button
-              onClick={async () => { await loadQueue() }}
-              className="text-sm px-3 py-1 bg-gray-100 rounded hover:bg-gray-200"
-            >
-              Refresh
-            </button>
-          </div>
-          <div className="flex gap-2 mb-2">
-            <button
-              onClick={async () => {
-                if (!token) { setSeqMsg('Please log in'); return }
-                try {
-                  const res = await fetch('http://localhost:3001/sequences/tick', {
-                    method: 'POST',
-                    headers: {
-                      'Authorization': `Bearer ${token}`,
-                      'Content-Type': 'application/json',
-                    },
-                  })
-                  const data = await res.json()
-                  setSeqMsg(`Tick processed ${data.processed} items`)
-                  await loadQueue()
-                } catch (e: any) {
-                  setSeqMsg(e.message)
-                }
-              }}
-              className="text-sm px-3 py-1 bg-green-100 text-green-800 rounded hover:bg-green-200"
-            >
-              Run Tick
-            </button>
-          </div>
-            <div className="space-y-2">
-              {loadingQueue && <div className="text-sm text-gray-500">Loading…</div>}
-              {!loadingQueue && queue.length === 0 && (
-                <div className="text-sm text-gray-500">No queued steps</div>
-              )}
-              {queue.map((q) => (
-                <div key={q.id} className="text-sm text-gray-700 bg-gray-50 p-2 rounded flex justify-between">
-                  <div>
-                    <div className="font-medium">{q.subject || '(no subject)'}</div>
-                    <div className="text-xs text-gray-500">{q.channel} • due {new Date(q.due_at).toLocaleString()}</div>
-                  </div>
-                  <span className={`text-xs px-2 py-1 rounded ${q.status === 'pending' ? 'bg-yellow-100 text-yellow-800' : q.status === 'sent' ? 'bg-green-100 text-green-800' : q.status === 'cancelled' ? 'bg-gray-100 text-gray-800' : 'bg-red-100 text-red-800' }`}>
-                    {q.status}
-                  </span>
-                </div>
-              ))}
+            <div className="flex gap-2">
+              <button onClick={async()=>{ await loadQueue() }} className="text-sm px-3 py-1 bg-gray-100 rounded hover:bg-gray-200">Refresh</button>
+              <button
+                onClick={async () => {
+                  if (!token) { setSeqMsg('Please log in'); return }
+                  try {
+                    const res = await fetch('http://localhost:3001/sequences/tick', { method: 'POST', headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' } })
+                    const data = await res.json()
+                    setSeqMsg(`Tick processed ${data.processed} items`)
+                    await loadQueue()
+                  } catch (e:any) { setSeqMsg(e.message) }
+                }}
+                className="text-sm px-3 py-1 bg-green-100 text-green-800 rounded hover:bg-green-200"
+              >Run Tick</button>
             </div>
+          </div>
+          <div className="space-y-2">
+            {loadingQueue && <div className="text-sm text-gray-500">Loading…</div>}
+            {!loadingQueue && queue.length === 0 && <div className="text-sm text-gray-500">No queued steps</div>}
+            {queue.map((q) => (
+              <div key={q.id} className="text-sm text-gray-700 bg-white p-2 rounded border flex justify-between">
+                <div>
+                  <div className="font-medium truncate max-w-[260px]">{q.subject || '(no subject)'}</div>
+                  <div className="text-xs text-gray-500">{q.channel} • due {new Date(q.due_at).toLocaleString()}</div>
+                </div>
+                <span className={`text-xs px-2 py-1 rounded ${q.status === 'pending' ? 'bg-yellow-100 text-yellow-800' : q.status === 'sent' ? 'bg-green-100 text-green-800' : q.status === 'cancelled' ? 'bg-gray-100 text-gray-800' : 'bg-red-100 text-red-800' }`}>
+                  {q.status}
+                </span>
+              </div>
+            ))}
           </div>
         </div>
       )}
@@ -365,22 +217,21 @@ export default function CampaignCard({ campaign, onEdit, onStart, onPause, onSto
   )
 }
 
-async function loadQueueInternal(campaignId: string, token: string) {
-  const res = await fetch('http://localhost:3001/sequences/queue', {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${token}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({ campaignId, limit: 5 })
-  })
-  if (!res.ok) {
-    const txt = await res.text()
-    throw new Error(txt)
-  }
-  return await res.json()
+function Metric({ label, icon, value }: { label: string; icon: string; value: any }) {
+  return (
+    <div className="text-center">
+      <div className="flex items-center justify-center mb-1"><img src={icon} alt={label} className="w-5 h-5" /></div>
+      <div className="text-2xl font-bold text-gray-900">{value}</div>
+      <div className="text-xs text-gray-500">{label}</div>
+    </div>
+  )
 }
 
-
-
-
+async function loadQueueInternal(campaignId: string, token: string) {
+  const res = await fetch('http://localhost:3001/sequences/queue', {
+    method: 'POST', headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ campaignId, limit: 5 })
+  })
+  if (!res.ok) throw new Error(await res.text())
+  return await res.json()
+}
