@@ -12,7 +12,8 @@ import { SupabaseModule } from '../supabase/supabase.module';
   imports: [
     ClientsModule,
     CrmModule, // ✅ important: allows AiModule to see CrmService (and MockService transitively)
-    SupabaseModule, // ✅ Add SupabaseModule for SupabaseService dependency
+    SupabaseModule, 
+    AiModule// ✅ Add SupabaseModule for SupabaseService dependency
   ],
   providers: [AiService, GmailService, CalendarService],
   controllers: [AiController],

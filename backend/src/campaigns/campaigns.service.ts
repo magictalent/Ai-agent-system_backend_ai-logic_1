@@ -185,4 +185,69 @@ export class CampaignsService {
     if (error) throw new Error(error.message);
     return { success: true };
   }
+
+  // Enrich campaign rows with derived metrics to improve UI
+  async enrichCampaigns(rows: any[], userId: string) {
+    const safeRows = Array.isArray(rows) ? rows : [];
+
+    // Eligible leads for this user (has email)
+    let eligibleLeads = 0;
+    try {
+      const { count } = await this.supabase
+        .from('leads')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', userId)
+        .not('email', 'is', null)
+        .neq('email', '');
+      eligibleLeads = count ?? 0;
+    } catch {}
+
+    const campaignIds = safeRows.map((r: any) => r.id).filter(Boolean);
+    const clientIds = safeRows.map((r: any) => r.client_id).filter(Boolean);
+    const monthAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
+    const nowIso = new Date().toISOString();
+
+    // Reply rate by campaign (last 30 days)
+    const byCampaign: Record<string, { outbound: number; inbound: number }> = {};
+    if (campaignIds.length) {
+      try {
+        const { data: msgs } = await this.supabase
+          .from('messages')
+          .select('campaign_id,direction,created_at')
+          .in('campaign_id', campaignIds)
+          .gte('created_at', monthAgo);
+        for (const m of (msgs || []) as any[]) {
+          const key = m.campaign_id;
+          if (!byCampaign[key]) byCampaign[key] = { outbound: 0, inbound: 0 };
+          if (m.direction === 'inbound') byCampaign[key].inbound += 1; else byCampaign[key].outbound += 1;
+        }
+      } catch {}
+    }
+
+    // Upcoming appointments per client
+    const meetingsByClient: Record<string, number> = {};
+    if (clientIds.length) {
+      try {
+        const { data: meetings } = await this.supabase
+          .from('meetings')
+          .select('client_id,start_time')
+          .in('client_id', clientIds)
+          .gte('start_time', nowIso);
+        for (const m of (meetings || []) as any[]) {
+          meetingsByClient[m.client_id] = (meetingsByClient[m.client_id] || 0) + 1;
+        }
+      } catch {}
+    }
+
+    return safeRows.map((r: any) => {
+      const counts = byCampaign[r.id] || { outbound: 0, inbound: 0 };
+      const rr = counts.outbound > 0 ? Number(((counts.inbound / Math.max(1, counts.outbound)) * 100).toFixed(1)) : 0;
+      return {
+        ...r,
+        leads_count: r.leads_count ?? eligibleLeads,
+        response_rate: r.response_rate ?? rr,
+        appointments_count: r.appointments_count ?? (meetingsByClient[r.client_id] || 0),
+      };
+    });
+  }
 }

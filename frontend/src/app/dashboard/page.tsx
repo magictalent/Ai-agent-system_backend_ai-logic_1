@@ -1,5 +1,6 @@
 ﻿"use client";
 
+
 import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useRouter } from "next/navigation";
@@ -62,11 +63,18 @@ function DashboardPage() {
     })();
   }, [token]);
 
-  if (loading) return <div className="p-6 text-gray-600">Loading dashboard�</div>;
+  if (loading) return <div className="p-6 text-gray-600">Loading dashboard...</div>;
   if (error) return <div className="p-6 text-red-600">{error}</div>;
 
   return (
     <div>
+      {/* Dashboard Title */}
+      <div className="mb-10">
+        <h1 className="text-3xl font-extrabold text-gray-900">Dashboard</h1>
+        <div className="mt-1 text-gray-500 text-lg font-normal">
+          Overview of interactions, activity, and engagement
+        </div>
+      </div>
       {/* MiniCards Row */}
       <div className="flex gap-8 mb-8 flex-wrap">
         <MiniCard
