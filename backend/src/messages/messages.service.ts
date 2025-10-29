@@ -14,7 +14,7 @@ export class MessagesService {
 
   async getConversations(userId: string): Promise<Conversation[]> {
     console.log('🔍 MessagesService: Getting conversations for user:', userId);
-    
+
     try {
       // Get all messages for user's campaigns
       const { data: messages, error } = await this.supabase
@@ -43,7 +43,7 @@ export class MessagesService {
 
       messages?.forEach((message: any) => {
         const leadId = message.lead_id;
-        
+
         if (!conversationsMap.has(leadId)) {
           conversationsMap.set(leadId, {
             lead_id: leadId,
@@ -78,7 +78,7 @@ export class MessagesService {
         });
 
         conversation.message_count++;
-        
+
         // Update last message time
         if (new Date(message.created_at) > new Date(conversation.last_message_at)) {
           conversation.last_message_at = message.created_at;
@@ -86,9 +86,9 @@ export class MessagesService {
       });
 
       const conversations = Array.from(conversationsMap.values());
-      
+
       // Sort by last message time
-      conversations.sort((a, b) => 
+      conversations.sort((a, b) =>
         new Date(b.last_message_at).getTime() - new Date(a.last_message_at).getTime()
       );
 
@@ -154,11 +154,12 @@ export class MessagesService {
     try {
       const { data: lastMsgs } = await this.supabase
         .from('messages')
-        .select(`*, campaigns!inner(id,name,user_id)`) // ensure same user
+        .select('*, campaigns!inner(id,name,user_id)')
         .eq('lead_id', leadId)
         .eq('campaigns.user_id', userId)
         .order('created_at', { ascending: false })
         .limit(1);
+
       const last = Array.isArray(lastMsgs) && lastMsgs[0];
       if (last) {
         campaignId = campaignId || last.campaign_id;
@@ -240,18 +241,31 @@ export class MessagesService {
   async autoReplyToInbound(params: { leadId: string; userId: string; campaignId?: string; tone?: 'friendly' | 'professional' | 'casual' }) {
     const { leadId, userId, tone } = params;
     // Load latest inbound message for this lead belonging to user's campaigns
-    const { data: lastInbound } = await this.supabase
+    const { data: lastInbound, error } = await this.supabase
       .from('messages')
-      .select(`*, campaigns!inner(id,name,description,user_id)`) as any
+      .select('*, campaigns!inner(id,name,description,tone,user_id,client_id)')
       .eq('lead_id', leadId)
       .eq('direction', 'inbound')
       .eq('campaigns.user_id', userId)
       .order('created_at', { ascending: false })
       .limit(1);
+
+    if (error) {
+      return { skipped: true, reason: 'select_error', error: error.message };
+    }
+
     const inbound = Array.isArray(lastInbound) && lastInbound[0];
     if (!inbound) return { skipped: true, reason: 'no_inbound' };
 
     const campaign = inbound.campaigns || null;
+    // Load client industry for context
+    let industry: string | undefined = undefined;
+    try {
+      if (campaign?.client_id) {
+        const { data: cli } = await this.supabase.from('clients').select('industry').eq('id', campaign.client_id).maybeSingle();
+        industry = (cli as any)?.industry || undefined;
+      }
+    } catch {}
 
     // Find lead details
     let leadEmail = inbound.lead_email || '';
@@ -277,11 +291,12 @@ export class MessagesService {
       campaignName: campaign?.name,
       campaignDescription: campaign?.description,
       lastInbound: inbound.content || '',
-      tone,
+      tone: tone || (campaign?.tone as any) || 'friendly',
+      industry,
     });
 
     // Send email
-    await this.gmail.sendEmail({ to: leadEmail, subject: `Re: ${campaign?.name || 'your inquiry'}` , text: reply });
+    await this.gmail.sendEmail({ to: leadEmail, subject: `Re: ${campaign?.name || "your inquiry"}` , text: reply });
 
     // Log outbound
     await this.supabase
@@ -300,3 +315,4 @@ export class MessagesService {
     return { ok: true };
   }
 }
+

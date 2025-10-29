@@ -6,6 +6,8 @@ import nodemailer from 'nodemailer';
 
 @Injectable()
 export class GmailService {
+  // Use a fixed UUID as the "shared" client_id so it fits UUID columns
+  private readonly SHARED_CLIENT_ID = '00000000-0000-0000-0000-000000000001';
   constructor(
     private readonly config: ConfigService,
     @Inject('SUPABASE_CLIENT') private readonly supabase: SupabaseClient,
@@ -62,8 +64,7 @@ export class GmailService {
   }
 
   private async getStoredTokens(clientId?: string) {
-    const SHARED_CLIENT_ID = '00000000-0000-0000-0000-000000000001';
-    const cid = (clientId && clientId.trim()) ? clientId.trim() : SHARED_CLIENT_ID;
+    const cid = (clientId && clientId.trim()) ? clientId.trim() : this.SHARED_CLIENT_ID;
     try {
       const { data, error } = await this.supabase
         .from('google_tokens')
@@ -102,7 +103,7 @@ export class GmailService {
           await this.supabase
             .from('google_tokens')
             .update({ access_token: newAccess, expiry_date: expiry })
-            .eq('client_id', (clientId && clientId.trim()) ? clientId.trim() : 'shared');
+            .eq('client_id', (clientId && clientId.trim()) ? clientId.trim() : this.SHARED_CLIENT_ID);
           oauth2Client.setCredentials({ access_token: newAccess, refresh_token: tokens.refresh_token, expiry_date: expiry });
           return { oauth2Client, access_token: newAccess };
         }
@@ -114,7 +115,7 @@ export class GmailService {
         await this.supabase
           .from('google_tokens')
           .update({ access_token: newAccess, expiry_date: expiry })
-          .eq('client_id', (clientId && clientId.trim()) ? clientId.trim() : 'shared');
+          .eq('client_id', (clientId && clientId.trim()) ? clientId.trim() : this.SHARED_CLIENT_ID);
         oauth2Client.setCredentials({ access_token: newAccess, refresh_token: tokens.refresh_token, expiry_date: expiry });
         return { oauth2Client, access_token: newAccess };
       }
@@ -178,32 +179,9 @@ export class GmailService {
   // Step 3: Send email using stored credentials
   async sendEmail({ to, subject, text }: { to: string; subject: string; text: string }) {
     try {
-      const { data, error } = await this.supabase
-        .from('google_tokens')
-        .select('*')
-        .eq('client_id', 'shared')
-        .maybeSingle();
-
-      if (error) {
-        console.error('[GmailService] Supabase error:', error);
-        throw new Error(`Supabase error: ${error.message}`);
-      }
-      if (!data) {
-        console.error('[GmailService] No stored Gmail token found.');
-        throw new Error('No stored Gmail token found.');
-      }
-
-      const oauth2Client = new google.auth.OAuth2(
-        this.config.get<string>('GOOGLE_CLIENT_ID'),
-        this.config.get<string>('GOOGLE_CLIENT_SECRET'),
-        this.config.get<string>('GOOGLE_REDIRECT_URI'),
-      );
-
-      oauth2Client.setCredentials({
-        access_token: data.access_token,
-        refresh_token: data.refresh_token,
-      });
-
+      // Use shared tokens by default
+      const tokens = await this.getStoredTokens(this.SHARED_CLIENT_ID);
+      const { oauth2Client } = await this.ensureFreshAccessToken(tokens, this.SHARED_CLIENT_ID);
       const gmail = google.gmail({ version: 'v1', auth: oauth2Client });
 
       const message = [
@@ -228,6 +206,17 @@ export class GmailService {
       console.log('✅ Gmail sent successfully to', to);
       return { success: true, to };
     } catch (err: any) {
+      // Fallback to SMTP if configured
+      try {
+        const transport = this.buildSmtpTransport();
+        if (transport) {
+          await transport.sendMail({ from: this.config.get<string>('FROM_EMAIL') || 'no-reply@example.com', to, subject: subject || 'Message', text: text || '' });
+          console.warn('[GmailService] OAuth send failed; fell back to SMTP for', to);
+          return { success: true, to, via: 'smtp' } as any;
+        }
+      } catch (smtpErr) {
+        console.error('[GmailService] SMTP fallback failed:', (smtpErr as any)?.message || smtpErr);
+      }
       console.error('❌ Gmail send error:', err?.response?.data || err.message || err);
       throw err;
     }
@@ -236,8 +225,14 @@ export class GmailService {
   // New: Send email with client scoping and token refresh
   async sendEmailForClient({ to, subject, text, clientId }: { to: string; subject: string; text: string; clientId?: string }) {
     try {
-      const tokens = await this.getStoredTokens(clientId);
-      const { oauth2Client } = await this.ensureFreshAccessToken(tokens, clientId);
+      let tokens: any;
+      try {
+        tokens = await this.getStoredTokens(clientId);
+      } catch (e) {
+        console.warn('[GmailService] No tokens for client', clientId, '— falling back to shared');
+        tokens = await this.getStoredTokens(this.SHARED_CLIENT_ID);
+      }
+      const { oauth2Client } = await this.ensureFreshAccessToken(tokens, clientId || this.SHARED_CLIENT_ID);
       const gmail = google.gmail({ version: 'v1', auth: oauth2Client });
 
       const message = [
@@ -261,6 +256,17 @@ export class GmailService {
 
       return { success: true, to };
     } catch (err: any) {
+      // Fallback to SMTP if configured
+      try {
+        const transport = this.buildSmtpTransport();
+        if (transport) {
+          await transport.sendMail({ from: this.config.get<string>('FROM_EMAIL') || 'no-reply@example.com', to, subject: subject || 'Message', text: text || '' });
+          console.warn('[GmailService] sendEmailForClient OAuth failed; fell back to SMTP for', to);
+          return { success: true, to, via: 'smtp' } as any;
+        }
+      } catch (smtpErr) {
+        console.error('[GmailService] SMTP fallback failed:', (smtpErr as any)?.message || smtpErr);
+      }
       console.error('[GmailService] sendEmailForClient error:', err?.response?.data || err.message || err);
       throw err;
     }
@@ -273,7 +279,7 @@ export class GmailService {
       const exp = Number(t.expiry_date || 0);
       const expiresInMs = exp ? (exp - Date.now()) : 0;
       const connected = Boolean(t.access_token || t.refresh_token);
-      return { connected, client_id: (clientId && clientId.trim()) ? clientId.trim() : 'shared', expires_in_ms: expiresInMs };
+      return { connected, client_id: (clientId && clientId.trim()) ? clientId.trim() : this.SHARED_CLIENT_ID, expires_in_ms: expiresInMs };
     } catch (e: any) {
       console.error('[GmailService] connectionStatus error:', e);
       return { connected: false, message: e?.message || 'Not connected' };

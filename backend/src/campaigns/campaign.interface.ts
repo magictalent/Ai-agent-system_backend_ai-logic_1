@@ -6,6 +6,7 @@ export interface Campaign {
   description?: string
   status: 'draft' | 'active' | 'paused' | 'completed'
   channel: 'whatsapp' | 'email' | 'sms' | 'multi'
+  tone?: 'friendly' | 'professional' | 'casual'
   client_name: string
   leads_count: number
   appointments_count: number
@@ -22,4 +23,5 @@ export interface CreateCampaignData {
   name: string
   description?: string
   channel: 'whatsapp' | 'email' | 'sms' | 'multi'
+  tone?: 'friendly' | 'professional' | 'casual'
 }

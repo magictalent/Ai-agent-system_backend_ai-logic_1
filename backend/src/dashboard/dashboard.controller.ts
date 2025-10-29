@@ -37,4 +37,10 @@ export class DashboardController {
     const days = period && period.endsWith('d') ? parseInt(period, 10) : (period ? parseInt(period, 10) : 7);
     return this.svc.getFinance(isNaN(days) ? 7 : days);
   }
+
+  // Next sends tile: last 24h sent and next 24h scheduled
+  @Get('sequence-window')
+  async sequenceWindow() {
+    return this.svc.getSequenceWindow();
+  }
 }

@@ -1,8 +1,6 @@
-"use client"
 
 import Sidebar from '../../components/Sidebar'
 import Topbar from '../../components/Topbar'
-import ProtectedRoute from '../../components/ProtectedRoute'
 
 export default function DashboardLayout({
   children,
@@ -10,16 +8,12 @@ export default function DashboardLayout({
   children: React.ReactNode
 }) {
   return (
-    <ProtectedRoute>
-      <div className="min-h-screen bg-gray-50 flex flex-col">
-        <Topbar />
-        <div className="flex flex-1">
-          <Sidebar />
-          <main className="flex-1 md:ml-[64px] p-4 md:p-8">
-            {children}
-          </main>
-        </div>
+    <div className="min-h-screen bg-gray-50 flex flex-col">
+      <Topbar />
+      <div className="flex flex-1">
+        <Sidebar />
+        <main className="flex-1 md:ml-[64px] p-4 md:p-8">{children}</main>
       </div>
-    </ProtectedRoute>
+    </div>
   )
 }

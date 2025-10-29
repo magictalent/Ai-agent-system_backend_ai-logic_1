@@ -5,6 +5,7 @@ import { SupabaseClient } from '@supabase/supabase-js';
 @Injectable()
 export class CalendarService {
   private oauth2Client;
+  private readonly SHARED_CLIENT_ID = '00000000-0000-0000-0000-000000000001';
 
   constructor(@Inject('SUPABASE_CLIENT') private readonly supabase: SupabaseClient) {
     this.oauth2Client = new google.auth.OAuth2(
@@ -52,13 +53,27 @@ export class CalendarService {
     startTime: string;
     attendees: { email: string }[];
   }) {
-    const { data: tokenData, error } = await this.supabase
-      .from('google_tokens')
-      .select('*')
-      .eq('client_id', clientId)
-      .single();
-    if (error || !tokenData) {
-      throw new Error('No Google tokens found for this client. Please connect Google in Integrations.');
+    // Try per-client first
+    let tokenData: any = null;
+    try {
+      const res = await this.supabase
+        .from('google_tokens')
+        .select('*')
+        .eq('client_id', clientId)
+        .maybeSingle();
+      if (!res.error && res.data) tokenData = res.data;
+    } catch {}
+    // Fallback to shared
+    if (!tokenData) {
+      const { data: shared } = await this.supabase
+        .from('google_tokens')
+        .select('*')
+        .eq('client_id', this.SHARED_CLIENT_ID)
+        .maybeSingle();
+      if (!shared) {
+        throw new Error('No Google tokens found. Connect Google in Integrations.');
+      }
+      tokenData = shared;
     }
     this.setCredentials({
       access_token: tokenData.access_token,

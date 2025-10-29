@@ -81,7 +81,7 @@ export class GoogleAuthController {
       // backward-compat: state might be raw clientId
       clientId = state;
     }
-    if (!clientId || clientId.trim() === '') clientId = 'shared';
+    if (!clientId || clientId.trim() === '') clientId = '00000000-0000-0000-0000-000000000001';
 
     // Store tokens in Supabase
     const { error } = await this.supabase.from('google_tokens').upsert(

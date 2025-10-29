@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { ScheduleModule } from '@nestjs/schedule';
 import { ConfigModule } from '@nestjs/config';
 import { APP_GUARD } from '@nestjs/core';
 import { AiModule } from './ai/ai.module';
@@ -22,6 +23,7 @@ import { SupabaseAuthGuard } from './auth/supabase-auth.guard';
       isGlobal: true,
       envFilePath: ['.env', '../.env'], // ✅ this line makes it look in /backend
     }), 
+    ScheduleModule.forRoot(),
     SupabaseModule, 
     AuthModule,
     AiModule, 

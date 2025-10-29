@@ -60,8 +60,7 @@ export default function CampaignsCreatePage() {
       });
       if (!res.ok) throw new Error(await res.text());
       const created = await res.json();
-      // Persist tone in UI state (not stored in DB)
-      setCampaigns((prev) => [{ ...created, tone: data.tone }, ...prev]);
+      setCampaigns((prev) => [created, ...prev]);
       if (opts?.startNow && created?.id) await handleStart(created.id);
     } catch (e: any) {
       setError(e?.message || "Failed to create campaign");
@@ -74,8 +73,6 @@ export default function CampaignsCreatePage() {
     try {
       const payload: any = { ...patch };
       if (!payload.client_id) delete payload.client_id;
-      // tone is UI-only; do not send to backend update
-      if (payload.tone) delete payload.tone;
       const res = await fetch(`http://localhost:3001/campaigns/${editing.id}`, {
         method: "PUT",
         headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
@@ -83,7 +80,7 @@ export default function CampaignsCreatePage() {
       });
       if (!res.ok) throw new Error(await res.text());
       const updated = await res.json();
-      setCampaigns((prev) => prev.map((c) => (c.id === updated.id ? { ...updated, tone: patch.tone || (c as any).tone } : c)));
+      setCampaigns((prev) => prev.map((c) => (c.id === updated.id ? updated : c)));
       setEditing(null);
     } catch (e: any) {
       setError(e?.message || "Failed to update campaign");
@@ -143,25 +140,25 @@ export default function CampaignsCreatePage() {
     <div className="min-h-screen bg-transparent flex flex-col">
       <header className="w-full px-8 pt-8 flex justify-between items-center">
         <div className="flex items-center gap-4">
-          <span className="text-gray-400 font-semibold text-xs tracking-wider flex items-center gap-1">
+          {/* <span className="text-gray-400 font-semibold text-xs tracking-wider flex items-center gap-1">
             <span className="hover:underline cursor-pointer">Dashboard</span>
             <FaChevronRight className="inline-block text-xs" />
             <span className="hover:underline cursor-pointer">Campaigns</span>
             <FaChevronRight className="inline-block text-xs" />
             <span className="text-blue-400">New Campaign</span>
-          </span>
+          </span> */}
         </div>
         <div className="flex gap-4 items-center">
-          <div className="flex flex-col text-right leading-tight">
+          {/* <div className="flex flex-col text-right leading-tight">
             <span className="font-semibold text-white">{user.name || "Anonymous"}</span>
             <span className="text-xs text-blue-200 opacity-70">{user.email}</span>
-          </div>
-          <span className="bg-gradient-to-br from-blue-500 to-violet-500 p-[2px] rounded-full">
+          </div> */}
+          {/* <span className="bg-gradient-to-br from-blue-500 to-violet-500 p-[2px] rounded-full">
             <FaUserCircle className="w-12 h-12 text-white bg-[#232254] rounded-full" />
-          </span>
-          <button className="ml-2 px-4 py-2 bg-violet-700 hover:bg-violet-800 text-white rounded-lg font-bold shadow">
+          </span> */}
+          {/* <button className="ml-2 px-4 py-2 bg-violet-700 hover:bg-violet-800 text-white rounded-lg font-bold shadow">
             Preview
-          </button>
+          </button> */}
         </div>
       </header>
 
@@ -205,7 +202,7 @@ export default function CampaignsCreatePage() {
         </div>
 
         {/* Card for Create/Edit */}
-        <div className="w-full max-w-2xl bg-[#181e48] border border-[#2a2c5e] shadow-2xl rounded-xl px-10 py-10 mx-auto relative z-20">
+        <div className="w-full max-w-2xl  border shadow-2xl rounded-xl px-10 py-10 mx-auto relative z-20">
           <div className="flex items-center justify-between mb-8">
             <div>
               <h2 className="text-xl font-extrabold leading-tight tracking-tight text-white">Product Information</h2>
@@ -214,7 +211,7 @@ export default function CampaignsCreatePage() {
             <div>
               {/* Progress bar */}
               <span className="text-xs font-bold text-violet-300">50%</span>
-              <div className="w-24 bg-[#222968] h-2 rounded-xl overflow-hidden mt-1">
+              <div className="w-24 h-2 rounded-xl overflow-hidden mt-1">
                 <div className="h-2 bg-gradient-to-r from-blue-500 to-violet-500" style={{ width: "50%" }} />
               </div>
             </div>
@@ -224,7 +221,7 @@ export default function CampaignsCreatePage() {
             mode={editing ? "edit" : "create"}
             initial={
               editing
-                ? { name: editing.name, description: editing.description, channel: editing.channel }
+                ? { name: editing.name, description: editing.description, channel: editing.channel, tone: (editing as any).tone }
                 : undefined
             }
             onSubmit={async (data, opts) => {
@@ -233,7 +230,7 @@ export default function CampaignsCreatePage() {
             }}
             onCancel={() => setEditing(null)}
             bgClass="bg-transparent"
-            inputClass="text-white bg-[#21234d] border border-[#343c89] focus:ring-2 focus:ring-violet-400"
+            inputClass="text-white  border border-[#343c89] focus:ring-2 focus:ring-violet-400"
             labelClass="text-blue-200"
             buttonClass="bg-gradient-to-br from-blue-500 to-violet-500 text-white shadow-md py-2 px-6 rounded-lg font-bold hover:opacity-90"
           />
@@ -245,7 +242,7 @@ export default function CampaignsCreatePage() {
         )}
 
         {/* Existing campaigns list to browse/edit */}
-        <div className="w-full max-w-5xl mt-10">
+        {/* <div className="w-full max-w-5xl mt-10">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-white text-lg font-bold">Existing Campaigns</h3>
             <span className="text-xs text-blue-300">Click ••• to Edit</span>
@@ -272,7 +269,7 @@ export default function CampaignsCreatePage() {
               ))}
             </div>
           )}
-        </div>
+        </div> */}
       </main>
     </div>
   );

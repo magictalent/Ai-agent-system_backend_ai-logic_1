@@ -13,6 +13,7 @@ CREATE TABLE campaigns (
   description text,
   status text NOT NULL DEFAULT 'draft' CHECK (status IN ('draft', 'active', 'paused', 'completed')),
   channel text NOT NULL CHECK (channel IN ('whatsapp', 'email', 'sms', 'multi')),
+  tone text DEFAULT 'friendly' CHECK (tone IN ('friendly','professional','casual')),
   client_name text NOT NULL,
   leads_count integer DEFAULT 0,
   appointments_count integer DEFAULT 0,

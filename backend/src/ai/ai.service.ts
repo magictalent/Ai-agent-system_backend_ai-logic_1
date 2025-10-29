@@ -31,7 +31,7 @@ export class AiService {
   /** Generate a personalized outbound message for a lead.
    * Includes campaign/offer context and varies tone/phrasing to avoid duplicates.
    */
-  async generateLeadMessage(lead: any, clientOffer: string, opts?: { campaignName?: string; campaignDescription?: string; tone?: 'friendly' | 'professional' | 'casual' }) {
+  async generateLeadMessage(lead: any, clientOffer: string, opts?: { campaignName?: string; campaignDescription?: string; tone?: 'friendly' | 'professional' | 'casual'; industry?: string }) {
     const first = (lead?.firstname || lead?.first_name || '').trim();
     const last = (lead?.lastname || lead?.last_name || '').trim();
     const fullName = [first, last].filter(Boolean).join(' ') || 'there';
@@ -50,6 +50,7 @@ export class AiService {
     if (opts?.campaignName) details.push(`Campaign: ${opts.campaignName}`);
     if (opts?.campaignDescription) details.push(`Campaign description: ${opts.campaignDescription}`);
     if (company) details.push(`Lead company: ${company}`);
+    if (opts?.industry) details.push(`Client industry: ${opts.industry}`);
 
     const user = `Write an initial email to ${fullName} about: ${clientOffer}.
 Style: ${style}.
@@ -73,16 +74,14 @@ Constraints:
   }
 
   /** Generate an on-thread reply to an inbound message from a lead */
-  async generateReplyMessage(params: { leadName?: string; campaignName?: string; campaignDescription?: string; lastInbound: string; tone?: 'friendly' | 'professional' | 'casual' }) {
-    const { leadName = 'there', campaignName, campaignDescription, lastInbound, tone } = params;
+  async generateReplyMessage(params: { leadName?: string; campaignName?: string; campaignDescription?: string; lastInbound: string; tone?: 'friendly' | 'professional' | 'casual'; industry?: string }) {
+    const { leadName = 'there', campaignName, campaignDescription, lastInbound, tone, industry } = params;
     const system = tone === 'professional'
       ? `You are a professional sales agent. Be concise (2-4 sentences), courteous, and focus on next steps.`
       : tone === 'casual'
       ? `You are a casual, friendly sales agent. Sound natural, keep it brief (2-4 sentences), and propose the next step.`
       : `You are a helpful sales agent. Reply concisely (2-5 sentences), answer the question, and move the thread toward a call if appropriate.`;
-    const user = `Lead (${leadName}) wrote:\n"""${lastInbound}"""\n
-Context:\n- Campaign: ${campaignName || 'N/A'}\n- Description: ${campaignDescription || 'N/A'}\n
-Write a natural reply that acknowledges their message and proposes a next step when relevant.`;
+    const user = `Lead (${leadName}) wrote:\n"""${lastInbound}"""\n\nContext:\n- Campaign: ${campaignName || 'N/A'}\n- Description: ${campaignDescription || 'N/A'}\n- Client industry: ${industry || 'N/A'}\n\nWrite a natural reply that acknowledges their message and proposes a next step when relevant.`;
 
     const completion = await this.openai.chat.completions.create({
       model: 'gpt-4o-mini',
@@ -104,12 +103,13 @@ Write a natural reply that acknowledges their message and proposes a next step w
     // TypeScript now knows client is not undefined
     const lead = await this.crmService.getLeadById(client.crm_provider, leadId, 'mock-token');
   
-    const messageText = await this.generateLeadMessage(lead, offer, { tone: opts?.tone });
+    const messageText = await this.generateLeadMessage(lead, offer, { tone: opts?.tone, industry: (client as any).industry, campaignName: offer });
   
-    await this.gmailService.sendEmail({
+    await this.gmailService.sendEmailForClient({
       to: lead.email,
       subject: `Regarding your interest in ${offer}`,
       text: messageText ?? '',
+      clientId: client.id,
     });
     await this.supabase.insert('messages', {
       client_id: client.id,

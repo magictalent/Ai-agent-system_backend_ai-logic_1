@@ -99,6 +99,7 @@ export class CampaignsService {
         name: campaignData.name,
         description: campaignData.description || null,
         channel,
+        tone: (campaignData.tone as any) || 'friendly',
         client_name: clientName,
         leads_count: 0,
         appointments_count: 0,

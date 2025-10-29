@@ -216,4 +216,33 @@ export class DashboardService {
       expenses_series,
     };
   }
+
+  // Counts of sends window
+  async getSequenceWindow() {
+    const now = new Date();
+    const last24 = new Date(now.getTime() - 24 * 60 * 60 * 1000).toISOString();
+    const next24 = new Date(now.getTime() + 24 * 60 * 60 * 1000).toISOString();
+    let sentLast24 = 0;
+    let scheduledNext24 = 0;
+
+    try {
+      const { count } = await this.db.client
+        .from('messages')
+        .select('*', { count: 'exact', head: true })
+        .eq('direction', 'outbound')
+        .gte('created_at', last24);
+      sentLast24 = count ?? 0;
+    } catch {}
+
+    try {
+      const { count } = await this.db.client
+        .from('sequence_queue')
+        .select('*', { count: 'exact', head: true })
+        .eq('status', 'pending')
+        .lte('due_at', next24);
+      scheduledNext24 = count ?? 0;
+    } catch {}
+
+    return { sent_last_24h: sentLast24, scheduled_next_24h: scheduledNext24 };
+  }
 }

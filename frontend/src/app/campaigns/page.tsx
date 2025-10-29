@@ -12,6 +12,7 @@ export default function CampaignsPage() {
   const [searchTerm, setSearchTerm] = useState('')
   const [filterStatus, setFilterStatus] = useState<string>('all')
   const [filterChannel, setFilterChannel] = useState<string>('all')
+  const [filterTone, setFilterTone] = useState<string>('all')
   const [error, setError] = useState('')
   const { user, token } = useAuth()
   const router = useRouter()
@@ -64,7 +65,8 @@ export default function CampaignsPage() {
     const byText = c.name.toLowerCase().includes(q) || c.client_name.toLowerCase().includes(q)
     const byStatus = filterStatus === 'all' || c.status === filterStatus
     const byChannel = filterChannel === 'all' || c.channel === filterChannel
-    return byText && byStatus && byChannel
+    const byTone = filterTone === 'all' || ((c as any).tone || 'friendly') === filterTone
+    return byText && byStatus && byChannel && byTone
   })
 
   useEffect(() => { if (user && token) fetchData() }, [user, token])
@@ -120,6 +122,12 @@ export default function CampaignsPage() {
             <select value={filterChannel} onChange={(e) => setFilterChannel(e.target.value)} className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
               <option value="all">All Channels</option>
               <option value="email">Email</option>
+            </select>
+            <select value={filterTone} onChange={(e) => setFilterTone(e.target.value)} className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+              <option value="all">All Tones</option>
+              <option value="friendly">Friendly</option>
+              <option value="professional">Professional</option>
+              <option value="casual">Casual</option>
             </select>
           </div>
         </div>
