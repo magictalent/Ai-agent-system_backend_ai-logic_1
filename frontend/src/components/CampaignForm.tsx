@@ -1,41 +1,44 @@
 "use client"
 
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { CreateCampaignData, CHANNEL_CONFIGS } from '@/types/campaign'
-
-type SimpleClient = { id: string; name: string }
 
 export default function CampaignForm({
   mode,
-  clients,
   onSubmit,
   onCancel,
   initial,
+  bgClass,
+  inputClass,
+  labelClass,
+  buttonClass,
 }: {
   mode: 'create' | 'edit'
-  clients: SimpleClient[]
   onSubmit: (data: CreateCampaignData, options?: { startNow?: boolean }) => Promise<void>
   onCancel?: () => void
   initial?: Partial<CreateCampaignData>
+  bgClass?: string
+  inputClass?: string
+  labelClass?: string
+  buttonClass?: string
 }) {
   const [form, setForm] = useState<CreateCampaignData>({
-    client_id: initial?.client_id || '',
     name: initial?.name || '',
     description: initial?.description || '',
     channel: (initial?.channel || 'email') as any,
+    tone: (initial?.tone || 'friendly') as any,
   })
   const [startNow, setStartNow] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
 
-  const hasClients = useMemo(() => clients && clients.length > 0, [clients])
-
   useEffect(() => {
     setForm({
-      client_id: initial?.client_id || '',
       name: initial?.name || '',
       description: initial?.description || '',
       channel: (initial?.channel || 'email') as any,
+      tone: (initial?.tone || 'friendly') as any,
+      // client_id intentionally omitted from UI
     })
     setStartNow(false)
     setError('')
@@ -59,8 +62,12 @@ export default function CampaignForm({
     }
   }
 
+  const baseInput = "w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+  const baseLabel = "block text-sm font-medium text-gray-700 mb-2"
+  const baseBtn = "px-5 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
+
   return (
-    <div className="bg-white rounded-2xl border shadow-sm p-6 sticky top-4">
+    <div className={`${bgClass ?? 'bg-white'} rounded-2xl border shadow-sm p-6 sticky top-4`}>
       <div className="flex items-start justify-between mb-4">
         <div>
           <div className="text-xs uppercase tracking-wider text-gray-400 font-semibold">{mode === 'edit' ? 'Edit' : 'Create'}</div>
@@ -76,58 +83,35 @@ export default function CampaignForm({
       )}
 
       <form onSubmit={submit} className="space-y-5">
-        {/* Client */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">Client {mode === 'create' ? '*' : ''}</label>
-          {hasClients ? (
-            <select
-              name="client_id"
-              value={form.client_id}
-              onChange={update}
-              required={mode === 'create'}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="">Select a client…</option>
-              {clients.map(c => (
-                <option key={c.id} value={c.id}>{c.name}</option>
-              ))}
-            </select>
-          ) : (
-            <div className="text-sm text-yellow-700 bg-yellow-50 border border-yellow-200 rounded p-3">
-              No clients found. Add one in Clients.
-            </div>
-          )}
-        </div>
-
         {/* Name */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">Campaign Name *</label>
+          <label className={`${labelClass ?? baseLabel}`}>Campaign Name *</label>
           <input
             name="name"
             value={form.name}
             onChange={update}
             required
             placeholder="e.g., Q1 Outreach"
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className={`${inputClass ?? baseInput}`}
           />
         </div>
 
         {/* Description */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">Description</label>
+          <label className={`${labelClass ?? baseLabel}`}>Description</label>
           <textarea
             name="description"
             value={form.description}
             onChange={update}
             rows={3}
             placeholder="Goals, audiences, strategy…"
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className={`${inputClass ?? baseInput}`}
           />
         </div>
 
         {/* Channel */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">Channel</label>
+          <label className={`${labelClass ?? baseLabel}`}>Channel</label>
           <div className="grid grid-cols-2 gap-3">
             {CHANNEL_CONFIGS.map(ch => (
               <label key={ch.id} className={`relative flex items-center p-4 border rounded-lg cursor-pointer transition-colors ${form.channel === ch.id ? 'border-blue-500 bg-blue-50' : 'border-gray-300 hover:border-gray-400'}`}>
@@ -144,6 +128,23 @@ export default function CampaignForm({
           </div>
         </div>
 
+        {/* Tone */}
+        <div>
+          <label className={`${labelClass ?? baseLabel}`}>Tone</label>
+          <div className="grid grid-cols-3 gap-2">
+            {([
+              { id: 'friendly', label: 'Friendly' },
+              { id: 'professional', label: 'Professional' },
+              { id: 'casual', label: 'Casual' },
+            ] as const).map(opt => (
+              <label key={opt.id} className={`px-3 py-2 border rounded-lg text-sm cursor-pointer text-center ${form.tone === opt.id ? 'border-blue-500 bg-blue-50' : 'border-gray-300 hover:border-gray-400'}`}>
+                <input type="radio" name="tone" value={opt.id} checked={form.tone === opt.id} onChange={update} className="sr-only" />
+                {opt.label}
+              </label>
+            ))}
+          </div>
+        </div>
+
         {mode === 'create' && (
           <label className="flex items-center gap-2 text-sm text-gray-700">
             <input type="checkbox" className="h-4 w-4" checked={startNow} onChange={(e) => setStartNow(e.target.checked)} />
@@ -155,7 +156,7 @@ export default function CampaignForm({
           {onCancel && (
             <button type="button" onClick={onCancel} className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200">Cancel</button>
           )}
-          <button type="submit" disabled={submitting} className="px-5 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50">
+          <button type="submit" disabled={submitting} className={`${buttonClass ?? baseBtn}`}>
             {submitting ? (mode === 'edit' ? 'Saving…' : 'Creating…') : (mode === 'edit' ? 'Save Changes' : 'Create Campaign')}
           </button>
         </div>
@@ -163,4 +164,3 @@ export default function CampaignForm({
     </div>
   )
 }
-

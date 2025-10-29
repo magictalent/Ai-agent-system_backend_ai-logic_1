@@ -1,25 +1,22 @@
 "use client"
 
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { CreateCampaignData, CHANNEL_CONFIGS } from '@/types/campaign'
-
-interface SimpleClient { id: string; name: string }
 
 interface AddCampaignModalProps {
   isOpen: boolean
   onClose: () => void
   onSubmit: (campaignData: CreateCampaignData, options?: { startNow?: boolean }) => Promise<void>
-  clients?: SimpleClient[]
   initial?: Partial<CreateCampaignData>
   mode?: 'create' | 'edit'
 }
 
-export default function AddCampaignModal({ isOpen, onClose, onSubmit, clients = [], initial, mode = 'create' }: AddCampaignModalProps) {
+export default function AddCampaignModal({ isOpen, onClose, onSubmit, initial, mode = 'create' }: AddCampaignModalProps) {
   const [formData, setFormData] = useState<CreateCampaignData>({
-    client_id: initial?.client_id || '',
     name: initial?.name || '',
     description: initial?.description || '',
     channel: (initial?.channel || 'email') as any,
+    tone: (initial?.tone || 'friendly') as any,
   })
   const [startNow, setStartNow] = useState(false)
   const [loading, setLoading] = useState(false)
@@ -28,17 +25,15 @@ export default function AddCampaignModal({ isOpen, onClose, onSubmit, clients = 
   useEffect(() => {
     if (isOpen) {
       setFormData({
-        client_id: initial?.client_id || '',
         name: initial?.name || '',
         description: initial?.description || '',
         channel: (initial?.channel || 'email') as any,
+        tone: (initial?.tone || 'friendly') as any,
       })
       setStartNow(false)
       setError('')
     }
   }, [isOpen, initial])
-
-  const hasClients = useMemo(() => Array.isArray(clients) && clients.length > 0, [clients])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -47,9 +42,7 @@ export default function AddCampaignModal({ isOpen, onClose, onSubmit, clients = 
 
     try {
       await onSubmit(formData, { startNow })
-      if (mode === 'create') {
-        setFormData({ client_id: '', name: '', description: '', channel: 'email' })
-      }
+      if (mode === 'create') setFormData({ name: '', description: '', channel: 'email', tone: 'friendly' })
       onClose()
     } catch (err: any) {
       setError(err.message || (mode === 'edit' ? 'Failed to update campaign' : 'Failed to create campaign'))
@@ -83,32 +76,6 @@ export default function AddCampaignModal({ isOpen, onClose, onSubmit, clients = 
           )}
 
           <form onSubmit={handleSubmit} className="space-y-6">
-            {/* Client */}
-            <div>
-              <label htmlFor="client_id" className="block text-sm font-medium text-gray-700 mb-2">
-                Client {mode === "create" ? '*' : ''}
-              </label>
-              {hasClients ? (
-                <select
-                  id="client_id"
-                  name="client_id"
-                  required={mode === 'create'}
-                  value={formData.client_id}
-                  onChange={handleChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                >
-                  <option value="">Select a client...</option>
-                  {clients.map(c => (
-                    <option key={c.id} value={c.id}>{c.name}</option>
-                  ))}
-                </select>
-              ) : (
-                <div className="text-sm text-yellow-700 bg-yellow-50 border border-yellow-200 rounded p-3">
-                  No clients found. Add a client first from the Clients page.
-                </div>
-              )}
-            </div>
-
             {/* Campaign Name */}
             <div>
               <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-2">
@@ -175,6 +142,23 @@ export default function AddCampaignModal({ isOpen, onClose, onSubmit, clients = 
               </div>
             </div>
 
+            {/* Tone Selection */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-3">Tone</label>
+              <div className="grid grid-cols-3 gap-2">
+                {([
+                  { id: 'friendly', label: 'Friendly' },
+                  { id: 'professional', label: 'Professional' },
+                  { id: 'casual', label: 'Casual' },
+                ] as const).map(opt => (
+                  <label key={opt.id} className={`px-3 py-2 border rounded-lg text-sm cursor-pointer text-center ${formData.tone === opt.id ? 'border-blue-500 bg-blue-50' : 'border-gray-300 hover:border-gray-400'}`}>
+                    <input type="radio" name="tone" value={opt.id} checked={formData.tone === opt.id} onChange={handleChange} className="sr-only" />
+                    {opt.label}
+                  </label>
+                ))}
+              </div>
+            </div>
+
             {mode === 'create' && (
               <div className="flex items-center gap-2">
                 <input id="startNow" type="checkbox" className="h-4 w-4" checked={startNow} onChange={(e) => setStartNow(e.target.checked)} />
@@ -205,4 +189,3 @@ export default function AddCampaignModal({ isOpen, onClose, onSubmit, clients = 
     </div>
   )
 }
-

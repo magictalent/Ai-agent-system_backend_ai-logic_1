@@ -11,9 +11,10 @@ interface CampaignCardProps {
   onPause: (campaignId: string) => void
   onStop: (campaignId: string) => void
   onDelete: (campaignId: string) => void
+  highlighted?: boolean
 }
 
-export default function CampaignCard({ campaign, onEdit, onStart, onPause, onStop, onDelete }: CampaignCardProps) {
+export default function CampaignCard({ campaign, onEdit, onStart, onPause, onStop, onDelete, highlighted = false }: CampaignCardProps) {
   const [showActions, setShowActions] = useState(false)
   const { token } = useAuth()
   const [showSequence, setShowSequence] = useState(false)
@@ -112,7 +113,12 @@ export default function CampaignCard({ campaign, onEdit, onStart, onPause, onSto
   }
 
   return (
-    <div className="bg-white rounded-lg shadow-lg p-6 hover:shadow-xl transition-shadow">
+    <div className={`relative bg-white rounded-lg shadow-lg p-6 hover:shadow-xl transition-shadow ${highlighted ? 'ring-2 ring-violet-500' : ''}`}>
+      {highlighted && (
+        <div className="absolute -top-2 -right-2 bg-violet-600 text-white text-xs px-2 py-0.5 rounded-full shadow">
+          Editing
+        </div>
+      )}
       {/* Header */}
       <div className="flex justify-between items-start mb-4">
         <div className="flex-1">
@@ -380,7 +386,6 @@ async function loadQueueInternal(campaignId: string, token: string) {
   }
   return await res.json()
 }
-
 
 
 

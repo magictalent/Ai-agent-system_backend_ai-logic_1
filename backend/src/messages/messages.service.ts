@@ -1,10 +1,16 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { SupabaseClient } from '@supabase/supabase-js';
 import { Conversation, Message } from './message.interface';
+import { AiService } from '../ai/ai.service';
+import { GmailService } from '../integrations/gmail.service';
 
 @Injectable()
 export class MessagesService {
-  constructor(@Inject('SUPABASE_CLIENT') private supabase: SupabaseClient) {}
+  constructor(
+    @Inject('SUPABASE_CLIENT') private supabase: SupabaseClient,
+    private readonly ai: AiService,
+    private readonly gmail: GmailService,
+  ) {}
 
   async getConversations(userId: string): Promise<Conversation[]> {
     console.log('🔍 MessagesService: Getting conversations for user:', userId);
@@ -219,6 +225,78 @@ export class MessagesService {
         .eq('id', leadId);
     } catch {}
 
+    // Auto-reply with AI (best-effort)
+    try {
+      await this.autoReplyToInbound({ leadId, userId, campaignId });
+    } catch (e) {
+      // Non-fatal
+      console.warn('[MessagesService] autoReplyToInbound failed:', (e as any)?.message || e);
+    }
+
     return { ok: true, message: data };
+  }
+
+  /** Generate and send an AI reply to the most recent inbound message for a lead */
+  async autoReplyToInbound(params: { leadId: string; userId: string; campaignId?: string; tone?: 'friendly' | 'professional' | 'casual' }) {
+    const { leadId, userId, tone } = params;
+    // Load latest inbound message for this lead belonging to user's campaigns
+    const { data: lastInbound } = await this.supabase
+      .from('messages')
+      .select(`*, campaigns!inner(id,name,description,user_id)`) as any
+      .eq('lead_id', leadId)
+      .eq('direction', 'inbound')
+      .eq('campaigns.user_id', userId)
+      .order('created_at', { ascending: false })
+      .limit(1);
+    const inbound = Array.isArray(lastInbound) && lastInbound[0];
+    if (!inbound) return { skipped: true, reason: 'no_inbound' };
+
+    const campaign = inbound.campaigns || null;
+
+    // Find lead details
+    let leadEmail = inbound.lead_email || '';
+    let leadName = inbound.lead_name || '';
+    if (!leadEmail || !leadName) {
+      try {
+        const { data: leadRow } = await this.supabase
+          .from('leads')
+          .select('first_name,last_name,email')
+          .eq('id', leadId)
+          .maybeSingle();
+        if (leadRow) {
+          leadName = leadName || `${leadRow.first_name || ''} ${leadRow.last_name || ''}`.trim();
+          leadEmail = leadEmail || leadRow.email || '';
+        }
+      } catch {}
+    }
+    if (!leadEmail) return { skipped: true, reason: 'missing_email' };
+
+    // Generate reply
+    const reply = await this.ai.generateReplyMessage({
+      leadName: leadName || 'there',
+      campaignName: campaign?.name,
+      campaignDescription: campaign?.description,
+      lastInbound: inbound.content || '',
+      tone,
+    });
+
+    // Send email
+    await this.gmail.sendEmail({ to: leadEmail, subject: `Re: ${campaign?.name || 'your inquiry'}` , text: reply });
+
+    // Log outbound
+    await this.supabase
+      .from('messages')
+      .insert({
+        campaign_id: campaign?.id || inbound.campaign_id || null,
+        lead_id: leadId,
+        lead_name: leadName,
+        lead_email: leadEmail,
+        channel: 'email',
+        content: reply,
+        status: 'sent',
+        direction: 'outbound',
+      });
+
+    return { ok: true };
   }
 }

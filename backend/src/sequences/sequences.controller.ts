@@ -7,7 +7,7 @@ export class SequencesController {
 
   @Post('start')
   async start(
-    @Body() body: { clientId: string; campaignId: string; leadId?: string; leadEmail?: string; channel?: 'email' | 'sms' | 'whatsapp' },
+    @Body() body: { clientId: string; campaignId: string; leadId?: string; leadEmail?: string; channel?: 'email' | 'sms' | 'whatsapp'; tone?: 'friendly' | 'professional' | 'casual' },
   ) {
     return this.sequences.startSequence(body);
   }
@@ -25,11 +25,12 @@ export class SequencesController {
 
   // Enqueue sequences for all eligible leads for a campaign
   @Post('start-all')
-  async startAll(@Body() body: { clientId: string; campaignId: string; channel?: 'email' | 'sms' | 'whatsapp'; limit?: number }) {
+  async startAll(@Body() body: { clientId: string; campaignId: string; channel?: 'email' | 'sms' | 'whatsapp'; tone?: 'friendly' | 'professional' | 'casual'; limit?: number }) {
     return this.sequences.startSequenceForAllLeads({
       clientId: body.clientId,
       campaignId: body.campaignId,
       channel: body.channel || 'email',
+      tone: body.tone,
       limit: body.limit || 1000,
     });
   }

@@ -1,9 +1,11 @@
 "use client"
 
 import { useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
 import { Campaign, CreateCampaignData } from "@/types/campaign";
 import CampaignForm from "@/components/CampaignForm";
+import CampaignCard from "@/components/CampaignCard";
 import { FaChevronRight, FaUserCircle } from "react-icons/fa";
 
 export default function CampaignsCreatePage() {
@@ -12,6 +14,7 @@ export default function CampaignsCreatePage() {
   const [error, setError] = useState("");
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [editing, setEditing] = useState<Campaign | null>(null);
+  const searchParams = useSearchParams();
 
   const fetchCampaigns = async () => {
     try {
@@ -26,7 +29,13 @@ export default function CampaignsCreatePage() {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (!res.ok) throw new Error(await res.text());
-      setCampaigns(await res.json());
+      const list: Campaign[] = await res.json();
+      setCampaigns(list);
+      const editId = searchParams?.get("edit");
+      if (editId) {
+        const found = list.find((c) => c.id === editId);
+        if (found) setEditing(found);
+      }
     } catch (e: any) {
       setError(e?.message || "Failed to load campaigns");
     } finally {
@@ -36,18 +45,24 @@ export default function CampaignsCreatePage() {
 
   useEffect(() => {
     if (user && token) fetchCampaigns();
-  }, [user, token]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user, token, searchParams]);
 
   const handleCreate = async (data: CreateCampaignData, opts?: { startNow?: boolean }) => {
     try {
+      // Omit client_id if not provided
+      const payload: any = { ...data };
+      if (!payload.client_id) delete payload.client_id;
       const res = await fetch("http://localhost:3001/campaigns/add", {
         method: "POST",
         headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
-        body: JSON.stringify(data),
+        body: JSON.stringify(payload),
       });
       if (!res.ok) throw new Error(await res.text());
       const created = await res.json();
-      setCampaigns((prev) => [created, ...prev]);
+      // Persist tone in UI state (not stored in DB)
+      setCampaigns((prev) => [{ ...created, tone: data.tone }, ...prev]);
+      if (opts?.startNow && created?.id) await handleStart(created.id);
     } catch (e: any) {
       setError(e?.message || "Failed to create campaign");
       throw e;
@@ -57,20 +72,55 @@ export default function CampaignsCreatePage() {
   const handleUpdate = async (patch: CreateCampaignData) => {
     if (!editing) return;
     try {
+      const payload: any = { ...patch };
+      if (!payload.client_id) delete payload.client_id;
+      // tone is UI-only; do not send to backend update
+      if (payload.tone) delete payload.tone;
       const res = await fetch(`http://localhost:3001/campaigns/${editing.id}`, {
         method: "PUT",
         headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
-        body: JSON.stringify(patch),
+        body: JSON.stringify(payload),
       });
       if (!res.ok) throw new Error(await res.text());
       const updated = await res.json();
-      setCampaigns((prev) => prev.map((c) => (c.id === updated.id ? updated : c)));
+      setCampaigns((prev) => prev.map((c) => (c.id === updated.id ? { ...updated, tone: patch.tone || (c as any).tone } : c)));
       setEditing(null);
     } catch (e: any) {
       setError(e?.message || "Failed to update campaign");
       throw e;
     }
   };
+
+  // Actions available on this page
+  const handleStart = async (campaignId: string) => {
+    try {
+      const res = await fetch(`http://localhost:3001/campaigns/${campaignId}/start`, {
+        method: 'POST', headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }
+      })
+      if (!res.ok) throw new Error('Failed to start campaign')
+      setCampaigns(prev => prev.map(c => c.id === campaignId ? { ...c, status: 'active' as const } : c))
+      // Optionally enqueue sequences immediately with tone preference
+      const camp = campaigns.find(c => c.id === campaignId)
+      if (camp) {
+        try {
+          await fetch('http://localhost:3001/sequences/start-all', {
+            method: 'POST',
+            headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+            body: JSON.stringify({ clientId: camp.client_id, campaignId: camp.id, channel: 'email', tone: (camp as any).tone || 'friendly' })
+          })
+        } catch {}
+      }
+    } catch (e: any) { setError(e?.message || 'Failed to start') }
+  }
+  const handlePause = async (campaignId: string) => {
+    try { const res = await fetch(`http://localhost:3001/campaigns/${campaignId}/pause`, { method: 'POST', headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' } }); if (!res.ok) throw new Error('Failed to pause campaign'); setCampaigns(prev => prev.map(c => c.id === campaignId ? { ...c, status: 'paused' as const } : c)) } catch (e: any) { setError(e?.message || 'Failed to pause') }
+  }
+  const handleStop = async (campaignId: string) => {
+    try { const res = await fetch(`http://localhost:3001/campaigns/${campaignId}/stop`, { method: 'POST', headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' } }); if (!res.ok) throw new Error('Failed to stop campaign'); setCampaigns(prev => prev.map(c => c.id === campaignId ? { ...c, status: 'completed' as const } : c)) } catch (e: any) { setError(e?.message || 'Failed to stop') }
+  }
+  const handleDelete = async (campaignId: string) => {
+    try { if (!confirm('Delete this campaign?')) return; const res = await fetch(`http://localhost:3001/campaigns/${campaignId}`, { method: 'DELETE', headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' } }); if (!res.ok) throw new Error(await res.text()); setCampaigns(prev => prev.filter(c => c.id !== campaignId)) } catch (e: any) { setError(e?.message || 'Failed to delete') }
+  }
 
   if (!user)
     return (
@@ -154,7 +204,7 @@ export default function CampaignsCreatePage() {
           </div>
         </div>
 
-        {/* Card for "Product Information" */}
+        {/* Card for Create/Edit */}
         <div className="w-full max-w-2xl bg-[#181e48] border border-[#2a2c5e] shadow-2xl rounded-xl px-10 py-10 mx-auto relative z-20">
           <div className="flex items-center justify-between mb-8">
             <div>
@@ -187,6 +237,41 @@ export default function CampaignsCreatePage() {
             labelClass="text-blue-200"
             buttonClass="bg-gradient-to-br from-blue-500 to-violet-500 text-white shadow-md py-2 px-6 rounded-lg font-bold hover:opacity-90"
           />
+        </div>
+
+        {/* Error banner */}
+        {error && (
+          <div className="w-full max-w-5xl mt-6 p-4 bg-red-50 border border-red-200 text-red-700 rounded-lg">{error}</div>
+        )}
+
+        {/* Existing campaigns list to browse/edit */}
+        <div className="w-full max-w-5xl mt-10">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-white text-lg font-bold">Existing Campaigns</h3>
+            <span className="text-xs text-blue-300">Click ••• to Edit</span>
+          </div>
+          {loading ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {[...Array(4)].map((_, i) => (
+                <div key={i} className="bg-[#181e48] border border-[#2a2c5e] rounded-xl p-6 animate-pulse h-40" />
+              ))}
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {campaigns.map((campaign) => (
+                <CampaignCard
+                  key={campaign.id}
+                  campaign={campaign}
+                  highlighted={editing?.id === campaign.id}
+                  onEdit={(c) => setEditing(c)}
+                  onStart={handleStart}
+                  onPause={handlePause}
+                  onStop={handleStop}
+                  onDelete={handleDelete}
+                />
+              ))}
+            </div>
+          )}
         </div>
       </main>
     </div>

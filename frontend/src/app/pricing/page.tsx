@@ -104,10 +104,22 @@ export default function PricingPage() {
   const getPlanPrice = (plan: Plan) =>
     billing === 'monthly' ? plan.price : plan.yearlyPrice
 
+  // Set a minimum card height for alignment
+  const CARD_MIN_HEIGHT = 570
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#201c45] via-[#191e37] to-[#161535] px-5 py-10 flex flex-col items-center font-sans">
+    <div className="min-h-screen bg-gradient-to-br from-[#201c45] via-[#191e37] to-[#161535] px-5 py-10 flex flex-col items-center font-sans relative">
       {/* Header */}
-      <div className="w-full max-w-5xl relative rounded-b-3xl bg-gradient-to-tr from-[#2b216d] via-[#21195c] to-[#582fa1] shadow-xl px-8 pt-12 pb-28 mb-[-80px] z-10 border border-[#382F7A]/40">
+      <div className="w-full max-w-5xl relative rounded-b-3xl bg-gradient-to-tr from-[#2b216d] via-[#21195c] to-[#582fa1] shadow-xl px-8 pt-12 pb-20 z-30 border border-[#382F7A]/40">
+        {/* Contact Us Button at top-right */}
+        <div className="absolute top-5 right-8 z-30">
+          <a
+            href="/contact"
+            className="hidden md:inline-block rounded-3xl border border-indigo-100 text-indigo-200 px-5 py-2 font-bold shadow bg-gradient-to-r from-[#5044c8]/70 to-[#210d63]/40 tracking-tight transition hover:bg-indigo-500/80 hover:text-white"
+          >
+            Contact us
+          </a>
+        </div>
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
           <div>
             <h1 className="text-3xl md:text-4xl font-black text-white tracking-tight mb-3 mt-2 drop-shadow">
@@ -141,30 +153,35 @@ export default function PricingPage() {
                 <span className="ml-2 px-2 py-0.5 text-xs bg-green-400/20 text-green-200 rounded-full font-semibold">Save 20%</span>
               </button>
             </div>
-            <button className="hidden md:inline-block mt-6 rounded-3xl border border-indigo-100 text-indigo-200 px-5 py-2 font-bold shadow bg-gradient-to-r from-[#5044c8]/70 to-[#210d63]/40 tracking-tight transition hover:bg-indigo-500/80 hover:text-white">
-              Contact us
-            </button>
           </div>
         </div>
       </div>
-      {/* Pricing Plans */}
-      <div className="w-full max-w-5xl flex flex-col items-center mt-0">
+      {/* Pricing Plans (move cards further down) */}
+      <div className="w-full max-w-5xl flex flex-col items-center relative" style={{zIndex: 100}}>
         {/* Plans Row */}
-        <div className="w-full flex flex-col md:flex-row gap-8 justify-center items-center mt-[-5rem]">
+        <div className="w-full flex flex-col md:flex-row gap-8 justify-center items-stretch mt-16 md:mt-28 z-[100] relative">
           {plans.map((plan, idx) => {
-            // Card layout and visual choices
             const isPro = plan.name === 'PRO'
             const commonCard =
-              'rounded-2xl shadow-2xl flex flex-col px-8 py-12 w-full max-w-sm items-center text-center'
+              `rounded-2xl shadow-2xl flex flex-col px-8 py-12 w-full max-w-sm items-center text-center relative`
             const colorCard =
               plan.name === 'PRO'
-                ? 'bg-[#2f277b]/95 border-2 border-indigo-500 scale-105 relative z-10'
-                : 'bg-[#25226a]/90 border border-[#382F7A]/30'
+                ? 'bg-[#2f277b]/95 border-2 border-indigo-500 scale-105 z-[100]'
+                : 'bg-[#25226a]/90 border border-[#382F7A]/30 z-[100]'
             const featuresArr = planDisplayFeatures[plan.name]
             const featuresOnArr = planDisplayFeaturesOn[plan.name]
-
             return (
-              <div className={`${commonCard} ${colorCard} mb-4 md:mb-0`} key={plan.name}>
+              <div
+                className={`${commonCard} ${colorCard}`}
+                key={plan.name}
+                style={{
+                  minHeight: CARD_MIN_HEIGHT,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  justifyContent: 'flex-start',
+                  zIndex: 100,
+                }}
+              >
                 <div
                   className={`uppercase text-xs tracking-wider ${
                     isPro
@@ -190,7 +207,10 @@ export default function PricingPage() {
                     isPro || plan.name === 'ENTERPRISE'
                       ? 'text-indigo-50/95'
                       : 'text-slate-100/90'
-                  } text-left mb-8 self-stretch`}
+                  } text-left mb-8 self-stretch flex-1`}
+                  style={{
+                    minHeight: 136,
+                  }}
                 >
                   {featuresArr &&
                     featuresArr.map((feat, i) => (
@@ -213,14 +233,18 @@ export default function PricingPage() {
                       </li>
                     ))}
                 </ul>
+                <div className="flex-1" />
                 <button
-                  className={`w-full py-2.5 rounded-xl ${
+                  className={`w-full py-2.5 rounded-xl mt-auto ${
                     isPro
                       ? 'bg-indigo-500 hover:bg-indigo-700'
                       : plan.name === 'ENTERPRISE'
                       ? 'bg-indigo-700 hover:bg-indigo-800'
                       : 'bg-indigo-600 hover:bg-indigo-700'
                   } text-white text-lg font-bold shadow transition`}
+                  style={{
+                    marginTop: 'auto'
+                  }}
                 >
                   {plan.customButtonText || 'Choose'}
                 </button>
@@ -234,7 +258,9 @@ export default function PricingPage() {
             )
           })}
         </div>
-        {/* Pricing Notes */}
+      </div>
+      {/* Pricing Notes */}
+      <div className="w-full max-w-5xl flex flex-col items-center">
         <div className="w-full mt-12 flex flex-col items-center">
           <div className="text-xs text-indigo-100/70 mt-8 mb-1 text-center">
             *Prices listed in USD for Vision Studio SaaS.

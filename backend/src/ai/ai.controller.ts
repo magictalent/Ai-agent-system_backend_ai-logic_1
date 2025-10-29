@@ -12,8 +12,8 @@ export class AiController {
   }
 
   @Post('send-message')
-  async sendMessage(@Body() body: { clientId: string; leadId: string; offer: string }, @CurrentUser() user: any) {
-    return this.aiService.sendMessageToLead(body.clientId, body.leadId, body.offer, user.id);
+  async sendMessage(@Body() body: { clientId: string; leadId: string; offer: string; tone?: 'friendly' | 'professional' | 'casual' }, @CurrentUser() user: any) {
+    return this.aiService.sendMessageToLead(body.clientId, body.leadId, body.offer, user.id, { tone: body.tone });
   }
 
   @Post('book-meeting')

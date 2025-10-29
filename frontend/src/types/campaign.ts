@@ -15,13 +15,16 @@ export interface Campaign {
   started_at?: string
   paused_at?: string
   completed_at?: string
+  tone?: 'friendly' | 'professional' | 'casual'
 }
 
 export interface CreateCampaignData {
-  client_id: string
+  // Optional on UI: backend may infer default client
+  client_id?: string
   name: string
   description?: string
   channel: 'whatsapp' | 'email' | 'sms' | 'multi'
+  tone?: 'friendly' | 'professional' | 'casual'
 }
 
 export interface CampaignMetrics {
@@ -57,4 +60,3 @@ export const STATUS_CONFIGS = {
   paused: { label: 'Paused', color: 'bg-yellow-100 text-yellow-800' },
   completed: { label: 'Completed', color: 'bg-blue-100 text-blue-800' }
 }
-

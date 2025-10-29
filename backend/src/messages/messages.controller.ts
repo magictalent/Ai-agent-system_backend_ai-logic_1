@@ -48,4 +48,19 @@ export class MessagesController {
       campaignId: body.campaignId,
     });
   }
+
+  // Manually trigger an AI auto-reply for the latest inbound from a lead
+  @Post('auto-reply')
+  async autoReply(
+    @Body() body: { leadId: string; campaignId?: string; tone?: 'friendly' | 'professional' | 'casual' },
+    @Request() req: any,
+  ) {
+    const userId = req.user.id;
+    return this.messagesService.autoReplyToInbound({
+      userId,
+      leadId: body.leadId,
+      campaignId: body.campaignId,
+      tone: body.tone,
+    });
+  }
 }

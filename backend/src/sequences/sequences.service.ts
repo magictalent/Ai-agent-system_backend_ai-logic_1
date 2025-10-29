@@ -11,6 +11,7 @@ interface StartSequenceDto {
   leadId?: string;
   leadEmail?: string;
   channel?: 'email' | 'sms' | 'whatsapp';
+  tone?: 'friendly' | 'professional' | 'casual';
 }
 
 @Injectable()
@@ -24,7 +25,7 @@ export class SequencesService {
   ) {}
 
   // Insert three basic steps spaced over 0d, +2d, +5d
-  async startSequence({ clientId, leadId, leadEmail, campaignId, channel = 'email' }: StartSequenceDto) {
+  async startSequence({ clientId, leadId, leadEmail, campaignId, channel = 'email', tone = 'friendly' }: StartSequenceDto) {
     const now = new Date();
     const step1 = new Date(now);
     const step2 = new Date(now.getTime() + 2 * 24 * 60 * 60 * 1000);
@@ -43,6 +44,69 @@ export class SequencesService {
 
     const firstName = lead?.first_name || 'there';
 
+    // Pull campaign details for better personalization
+    let campaign: any = null;
+    try {
+      const { data: camp } = await this.db.client
+        .from('campaigns')
+        .select('id,name,description')
+        .eq('id', campaignId)
+        .maybeSingle();
+      campaign = camp || null;
+    } catch {}
+
+    // Subject and body variants to add diversity
+    const subjects = [
+      () => `Quick question about ${lead?.company || campaign?.name || 'your goals'}`,
+      () => `${campaign?.name || 'An idea'} for ${lead?.company || 'you'}`,
+      () => `Thoughts on ${campaign?.description ? (campaign.description as string).slice(0, 40) + '…' : 'improving results?'}`,
+    ];
+    const openers = tone === 'professional'
+      ? [
+          (name: string) => `Hello ${name},`,
+          (name: string) => `Good day ${name},`,
+        ]
+      : tone === 'casual'
+      ? [
+          (name: string) => `Hey ${name},`,
+          (name: string) => `Hi ${name}!`,
+        ]
+      : [
+          (name: string) => `Hi ${name},`,
+          (name: string) => `Hello ${name},`,
+        ];
+
+    const valueLines = tone === 'professional'
+      ? [
+          () => `We help ${lead?.company || 'teams'} improve pipeline efficiency — ${campaign?.description || 'driving higher reply and meeting rates'}.`,
+          () => `Clients report measurable lift in qualified responses and booked calls.`,
+        ]
+      : tone === 'casual'
+      ? [
+          () => `We’ve been helping folks like ${lead?.company || 'you'} get more replies + meetings.`,
+          () => `${campaign?.description || 'Short version: better targeting, clearer copy, faster follow-ups.'}`,
+        ]
+      : [
+          () => `We’re helping teams like ${lead?.company || 'yours'} with ${campaign?.description || 'streamlining outreach and booking more meetings'}.`,
+          () => `We can likely boost your reply rates and qualified meetings.`,
+        ];
+
+    const ctaLines = tone === 'professional'
+      ? [
+          () => `Would you be open to a brief 10–15 minute discussion this week?`,
+          () => `Happy to share a concise overview — is there a time that suits you?`,
+        ]
+      : tone === 'casual'
+      ? [
+          () => `Worth a quick 10–15 min chat to see if this fits?`,
+          () => `If helpful, I can share examples — have 15 mins later this week?`,
+        ]
+      : [
+          () => `Open to a quick 10–15 min chat this week?`,
+          () => `Happy to share examples — is your calendar open later this week?`,
+        ];
+    const pick = <T,>(arr: Array<() => T>) => arr[Math.floor(Math.random() * arr.length)]();
+
     const rows = [
       {
         campaign_id: campaignId,
@@ -50,8 +114,8 @@ export class SequencesService {
         lead_id: leadId || (lead?.id ?? ''),
         channel,
         type: 'email',
-        subject: `Quick question about ${lead?.company || 'your needs'}`,
-        content: `Hi ${firstName},\n\nWanted to share something that could help you hit your goals faster. Would 10 minutes this week be okay?`,
+        subject: pick(subjects),
+        content: `${pick(openers)(firstName)}\n\n${pick(valueLines)}\n\n${pick(ctaLines)}`,
         due_at: step1.toISOString(),
         status: 'pending',
       },
@@ -61,8 +125,8 @@ export class SequencesService {
         lead_id: leadId || (lead?.id ?? ''),
         channel,
         type: 'email',
-        subject: `Following up — any thoughts?`,
-        content: `Hi ${firstName},\n\nJust following up in case this got buried. Happy to share examples and results.`,
+        subject: `Following up — ${campaign?.name || 'quick check'}`,
+        content: `${pick(openers)(firstName)}\n\nJust circling back in case this slipped. ${pick(valueLines)}\n\n${pick(ctaLines)}`,
         due_at: step2.toISOString(),
         status: 'pending',
       },
@@ -73,7 +137,7 @@ export class SequencesService {
         channel,
         type: 'email',
         subject: `Should I close the loop?`,
-        content: `Hi ${firstName},\n\nIf now’s not the right time, no problem — I can circle back later. If interested, a quick call is easiest.`,
+        content: `${pick(openers)(firstName)}\n\nIf now’s not the right time, no problem — I can circle back later. ${pick(ctaLines)}`,
         due_at: step3.toISOString(),
         status: 'pending',
       },
@@ -99,7 +163,7 @@ export class SequencesService {
   }
 
   // Enqueue a sequence for all eligible leads for the given campaign/client
-  async startSequenceForAllLeads({ clientId, campaignId, channel = 'email', limit = 1000 }: { clientId: string; campaignId: string; channel?: 'email' | 'sms' | 'whatsapp'; limit?: number }) {
+  async startSequenceForAllLeads({ clientId, campaignId, channel = 'email', tone = 'friendly', limit = 1000 }: { clientId: string; campaignId: string; channel?: 'email' | 'sms' | 'whatsapp'; tone?: 'friendly' | 'professional' | 'casual'; limit?: number }) {
     // Load leads from DB. For email channel, require a non-empty email.
     const query = this.db.client
       .from('leads')
@@ -123,7 +187,7 @@ export class SequencesService {
         .limit(1);
       if (Array.isArray(hasQueue) && hasQueue.length) continue;
 
-      const res = await this.startSequence({ clientId, campaignId, leadId: lead.id, channel });
+      const res = await this.startSequence({ clientId, campaignId, leadId: lead.id, channel, tone });
       enqueuedLeads += 1;
       totalSteps += res.created || 0;
     }
