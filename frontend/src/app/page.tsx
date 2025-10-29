@@ -312,14 +312,89 @@ export default function Home() {
           {/* Navbar */}
           <nav className="bg-white shadow-sm sticky top-0 z-50">
             <div className="max-w-7xl mx-auto px-6 py-3 flex justify-between items-center">
+              {/* Logo Area */}
               <div className="flex items-center space-x-2">
                 <img
                   src="/logo.png"
                   alt="AI Sales Agents Logo"
-                  className="w-20 h-20 object-contain"
+                  className="w-30 h-20 object-contain"
                 />
-                <span className="text-xl font-semibold text-gray-900">AI Sales Agents</span>
+                <img
+                  src="/logo3.png"
+                  alt="AI Sales Agents Logo"
+                  className="w-30 h-20 object-contain"
+                />
               </div>
+
+              {/* Center Controls: Search + Language + High Contrast */}
+              <div className="flex items-center space-x-4">
+                {/* Search box */}
+                <div className="relative group">
+                  <input
+                    type="text"
+                    placeholder="Search..."
+                    className="border border-gray-300 rounded-full px-4 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
+                    aria-label="Search"
+                  />
+                  <button
+                    type="submit"
+                    className="absolute right-1 top-1/2 -translate-y-1/2 text-gray-500 hover:text-blue-600 p-1 rounded"
+                    tabIndex={-1}
+                  >
+                    <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                      <circle cx="11" cy="11" r="7"></circle>
+                      <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                    </svg>
+                  </button>
+                </div>
+
+                {/* Language Toggle */}
+                <div className="relative">
+                  <select
+                    className="border border-gray-300 rounded-full px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                    aria-label="Select Language"
+                    defaultValue="en"
+                    onChange={e => {
+                      // Replace with actual i18n switch logic
+                      alert('Language switched to ' + e.target.value);
+                    }}
+                  >
+                    <option value="en">EN</option>
+                    <option value="es">ES</option>
+                    <option value="fr">FR</option>
+                    <option value="de">DE</option>
+                  </select>
+                </div>
+
+                {/* High Contrast Toggle */}
+                <button
+                  aria-label="Toggle High Contrast"
+                  className="border border-gray-300 rounded-full px-3 py-1 bg-white text-gray-700 text-xs font-medium hover:bg-black hover:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
+                  onClick={() => {
+                    // Simple high contrast toggle for demonstration
+                    const root = document.documentElement;
+                    if (root.classList.contains('hc')) {
+                      root.classList.remove('hc');
+                    } else {
+                      root.classList.add('hc');
+                    }
+                  }}
+                >
+                  <svg
+                    width="18"
+                    height="18"
+                    viewBox="0 0 24 24"
+                    fill="currentColor"
+                    className="inline-block mr-1 -mt-0.5"
+                  >
+                    <circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" strokeWidth="2"/>
+                    <path d="M2 12h20M12 2a10 10 0 000 20z" fill="currentColor"/>
+                  </svg>
+                  HC
+                </button>
+              </div>
+
+              {/* Auth Links */}
               <div className="flex space-x-4">
                 <Link
                   href="/login"
@@ -331,10 +406,21 @@ export default function Home() {
                   href="/signup"
                   className="bg-blue-600 text-white px-5 py-2 rounded-lg font-medium hover:bg-blue-700 transition"
                 >
-                  Get Started
+                  Get a Demo
                 </Link>
               </div>
             </div>
+            {/* Simple high contrast styles - must be expanded in global CSS for full support */}
+            <style jsx global>{`
+              .hc {
+                filter: invert(1) grayscale(1) !important;
+                background: #111 !important;
+                color: #fff !important;
+              }
+              .hc img { filter: invert(1) grayscale(0) !important; }
+              .hc input, .hc select, .hc button { background: #222 !important; color: #fff !important; border-color: #fff !important; }
+              .hc svg { color: #fff !important; }
+            `}</style>
           </nav>
           {/* Hero Section */}
           <main className="flex flex-col items-center justify-center max-w-7xl mx-auto px-6 py-36 flex-grow text-center">
@@ -704,7 +790,7 @@ export default function Home() {
             {/* Logo Centered */}
             <div className="mb-2 flex justify-center">
               <img
-                src="/logo2.png"
+                src="/logo23.png"
                 alt="Sales Agents Logo"
                 className="h-50 w-auto"
                 style={{ filter: 'brightness(0) invert(1)' }}

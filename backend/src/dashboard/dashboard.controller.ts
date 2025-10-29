@@ -30,4 +30,11 @@ export class DashboardController {
     const days = period && period.endsWith('d') ? parseInt(period, 10) : (period ? parseInt(period, 10) : 7);
     return this.svc.getAnalytics(isNaN(days) ? 7 : days);
   }
+
+  // Finance metrics (dummy computation based on activity)
+  @Get('finance')
+  async finance(@Query('period') period?: string) {
+    const days = period && period.endsWith('d') ? parseInt(period, 10) : (period ? parseInt(period, 10) : 7);
+    return this.svc.getFinance(isNaN(days) ? 7 : days);
+  }
 }

@@ -27,12 +27,11 @@ export default function Topbar() {
         </button>
         <div className="flex items-center gap-2">
           <img
-            src="/logo.png"
+            src="/logo23.png"
             alt="AI Sales Agents Logo"
-            className="w-9 h-9 object-contain"
+            className="w-30 h-30 object-contain"
             draggable={false}
           />
-          <span className="hidden sm:inline font-semibold text-base text-white tracking-tight">AI Sales Agents</span>
         </div>
       </div>
       {/* Center: Search */}

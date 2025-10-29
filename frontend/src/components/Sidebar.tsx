@@ -29,7 +29,10 @@ const groups: Group[] = [
       { icon: Scissors, label: 'Snippets', href: '/snippets' },
     ],
   },
-  { key: 'campaigns', icon: Megaphone, label: 'Campaigns', items: [{ label: 'Open', href: '/campaigns' }] },
+  { key: 'campaigns', icon: Megaphone, label: 'Campaigns', items: [
+    { label: 'All Campaigns', href: '/campaigns' },
+    { label: 'Create Campaign', href: '/campaigns?new=1' },
+  ] },
   { key: 'analytics', icon: BarChart4, label: 'Analytics', items: [{ label: 'Overview', href: '/analytics' }] },
   { key: 'integrations', icon: Wrench, label: 'Integrations', items: [{ label: 'Manage', href: '/integrations' }] },
   { key: 'settings', icon: Cog, label: 'Settings', items: [{ label: 'Profile', href: '/settings' }] },

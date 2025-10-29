@@ -4,6 +4,8 @@ import { google } from 'googleapis';
 import { ConfigService } from '@nestjs/config';
 import { SupabaseClient } from '@supabase/supabase-js';
 import { Public } from '../auth/public.decorator';
+import { randomUUID } from 'crypto';
+
 
 @Controller('google/auth')
 export class GoogleAuthController {
@@ -22,8 +24,10 @@ export class GoogleAuthController {
   ) {
     // Allow a shared/default connection when no clientId provided
     if (!clientId || clientId.trim() === '') {
-      clientId = 'shared';
+      // Generate a consistent shared UUID, or fallback to a static one
+      clientId = '00000000-0000-0000-0000-000000000001';
     }
+    
 
     const oauth2Client = new google.auth.OAuth2(
       this.config.get<string>('GOOGLE_CLIENT_ID'),
@@ -40,6 +44,7 @@ export class GoogleAuthController {
       scope: [
         'https://www.googleapis.com/auth/calendar.events',
         'https://www.googleapis.com/auth/userinfo.email',
+        'https://www.googleapis.com/auth/gmail.send',
       ],
       state,
     });

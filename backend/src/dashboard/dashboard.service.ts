@@ -186,4 +186,34 @@ export class DashboardService {
 
     return out;
   }
+
+  async getFinance(days = 7) {
+    // Reuse the time series to derive simple finance metrics
+    const ts = await this.getTimeSeries(days);
+    const series = Array.isArray((ts as any)?.series) ? (ts as any).series : [];
+
+    // Dummy computation:
+    // - revenue correlates with inbound replies and appointments
+    // - expenses correlate with outbound volume and lead acquisition
+    const revenue_series = series.map((s: any) => ({
+      date: s.date,
+      value: Math.round(s.inbound * 80 + s.appointments * 200),
+    }));
+    const expenses_series = series.map((s: any) => ({
+      date: s.date,
+      value: Math.round(s.outbound * 5 + s.leads * 2),
+    }));
+
+    const totals = {
+      revenue: revenue_series.reduce((sum: number, r: any) => sum + (r.value || 0), 0),
+      expenses: expenses_series.reduce((sum: number, r: any) => sum + (r.value || 0), 0),
+    };
+
+    return {
+      period_days: days,
+      totals,
+      revenue_series,
+      expenses_series,
+    };
+  }
 }

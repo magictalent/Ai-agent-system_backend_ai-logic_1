@@ -1,7 +1,8 @@
 "use client"
 
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
+import { useRouter, useSearchParams } from 'next/navigation'
 
 type SeriesRow = { date: string; leads: number; outbound: number; inbound: number; appointments: number }
 
@@ -14,6 +15,10 @@ export default function AnalyticsPage() {
   const [totals, setTotals] = useState<{ leads: number; outbound: number; inbound: number }>({ leads: 0, outbound: 0, inbound: 0 })
   const [byChannel, setByChannel] = useState<any[]>([])
   const [byCampaign, setByCampaign] = useState<any[]>([])
+  const search = useSearchParams()
+  const router = useRouter()
+  const focus = search.get('focus') || ''
+  const dateParam = search.get('date') || ''
 
   useEffect(() => {
     if (!token) return
@@ -40,6 +45,8 @@ export default function AnalyticsPage() {
     load()
   }, [token, period])
 
+  const selected = useMemo(() => series.find(s => s.date === dateParam) || null, [series, dateParam])
+
   return (
     <div className="min-h-screen bg-gray-50 p-6">
       <div className="flex items-center justify-between mb-6">
@@ -59,11 +66,24 @@ export default function AnalyticsPage() {
         <Card title="Inbound" value={totals.inbound} />
       </div>
 
-      {/* Time series charts */}
+      {/* Selected day details */}
+      {selected && (
+        <div className="bg-white rounded-lg border p-4 mb-6">
+          <div className="font-semibold text-gray-900 mb-2">{selected.date}</div>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+            <Card title="Leads" value={selected.leads} />
+            <Card title="Outbound" value={selected.outbound} />
+            <Card title="Inbound" value={selected.inbound} />
+            <Card title="Appointments" value={selected.appointments} />
+          </div>
+        </div>
+      )}
+
+      {/* Time series charts with tooltips + drill-down */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-        <Chart title="Leads" values={series.map(s => s.leads)} color="#2563eb" />
-        <Chart title="Outbound" values={series.map(s => s.outbound)} color="#7c3aed" />
-        <Chart title="Inbound" values={series.map(s => s.inbound)} color="#16a34a" />
+        <Chart title="Leads" values={series.map(s => s.leads)} labels={series.map(s => s.date)} color="#2563eb" onClick={(d) => router.push(`/analytics?date=${encodeURIComponent(d)}&focus=leads`)} highlight={focus==='leads'} />
+        <Chart title="Outbound" values={series.map(s => s.outbound)} labels={series.map(s => s.date)} color="#7c3aed" onClick={(d) => router.push(`/analytics?date=${encodeURIComponent(d)}&focus=outbound`)} highlight={focus==='outbound'} />
+        <Chart title="Inbound" values={series.map(s => s.inbound)} labels={series.map(s => s.date)} color="#16a34a" onClick={(d) => router.push(`/analytics?date=${encodeURIComponent(d)}&focus=inbound`)} highlight={focus==='inbound'} />
       </div>
 
       {/* Breakdowns */}
@@ -84,16 +104,33 @@ function Card({ title, value }: { title: string; value: number | string }) {
   )
 }
 
-function Chart({ title, values, color }: { title: string; values: number[]; color: string }) {
+function Chart({ title, values, labels, color, onClick, highlight }: { title: string; values: number[]; labels?: string[]; color: string; onClick?: (date: string) => void; highlight?: boolean }) {
+  const [hover, setHover] = useState<number | null>(null)
   const max = Math.max(1, ...values)
   const width = Math.max(1, Math.floor(100 / Math.max(1, values.length)))
   return (
-    <div className="bg-white rounded-lg border p-4">
+    <div className={`bg-white rounded-lg border p-4 ${highlight ? 'ring-2 ring-offset-1 ring-blue-400' : ''}`}>
       <div className="font-semibold text-gray-900 mb-2">{title}</div>
-      <div className="h-28 flex items-end gap-1">
+      <div className="h-28 flex items-end gap-1 relative">
         {values.map((v, i) => (
-          <div key={i} className="rounded-sm" style={{ width: `${width}%`, height: `${(v / max) * 100}%`, background: color, opacity: 0.9 }} />
+          <div
+            key={i}
+            className="rounded-sm cursor-pointer transition-opacity"
+            style={{ width: `${width}%`, height: `${(v / max) * 100}%`, background: color, opacity: hover===i ? 1 : 0.9 }}
+            onMouseEnter={() => setHover(i)}
+            onMouseLeave={() => setHover(null)}
+            onClick={() => onClick && labels && onClick(labels[i])}
+            title={labels?.[i] ? `${labels[i]}: ${v}` : String(v)}
+          />
         ))}
+        {hover !== null && (
+          <div className="absolute -top-2 translate-y-[-100%] left-0 right-0 flex justify-center pointer-events-none">
+            <div className="bg-black/80 text-white text-xs px-2 py-1 rounded shadow">
+              <div>{labels?.[hover] || ''}</div>
+              <div className="font-semibold">{values[hover]}</div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   )
@@ -125,4 +162,3 @@ function TableCard({ title, columns, rows }: { title: string; columns: string[];
     </div>
   )
 }
-

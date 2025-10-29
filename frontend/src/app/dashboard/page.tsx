@@ -3,6 +3,8 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
 import Script from 'next/script'
+import { DotLottieReact } from '@lottiefiles/dotlottie-react'
+import { useRouter } from 'next/navigation' // <-- fix error: was missing import
 
 type Lead = { id: string; firstname: string; lastname: string; email: string }
 
@@ -17,6 +19,7 @@ declare global {
 
 // DotLottie Player Component
 const DotLottiePlayer = (props: React.HTMLAttributes<HTMLElement> & Record<string, any>) => {
+  // safeguard: render a dotlottie-player when possible
   return <dotlottie-player {...props} />
 }
 
@@ -30,6 +33,7 @@ export default function Dashboard() {
   const [period, setPeriod] = useState<'7d' | '30d'>('7d')
   const [series, setSeries] = useState<{ date: string; leads: number; outbound: number; inbound: number; appointments: number }[]>([])
   const [recentMsgs, setRecentMsgs] = useState<{ lead: string; content: string; at: string }[]>([])
+  const [finance, setFinance] = useState<{ period_days: number; totals: { revenue: number; expenses: number }; revenue_series: { date: string; value: number }[]; expenses_series: { date: string; value: number }[] }>({ period_days: 7, totals: { revenue: 0, expenses: 0 }, revenue_series: [], expenses_series: [] })
 
   // Track dotlottie script loaded status
   const [lottieReady, setLottieReady] = useState(false)
@@ -39,20 +43,29 @@ export default function Dashboard() {
       try {
         setLoading(true)
         setError('')
-        const [sRes, lRes, tRes, cRes] = await Promise.all([
+        const [sRes, lRes, tRes, cRes, fRes] = await Promise.all([
           fetch('http://localhost:3001/dashboard/summary', { headers: { 'Authorization': `Bearer ${token || ''}` } }),
           fetch('http://localhost:3001/dashboard/recent-leads?limit=6', { headers: { 'Authorization': `Bearer ${token || ''}` } }),
           fetch(`http://localhost:3001/dashboard/timeseries?period=${period}`, { headers: { 'Authorization': `Bearer ${token || ''}` } }),
           fetch('http://localhost:3001/messages/conversations', { headers: { 'Authorization': `Bearer ${token || ''}` } }),
+          fetch(`http://localhost:3001/dashboard/finance?period=${period}`, { headers: { 'Authorization': `Bearer ${token || ''}` } }),
         ])
         if (!sRes.ok) throw new Error(await sRes.text())
         if (!lRes.ok) throw new Error(await lRes.text())
         if (!tRes.ok) throw new Error(await tRes.text())
+        if (!fRes.ok) throw new Error(await fRes.text())
         setSummary(await sRes.json())
         const leadsData = await lRes.json()
         setLeads((leadsData || []).map((r: any) => ({ id: r.id, firstname: r.first_name || '', lastname: r.last_name || '', email: r.email || '' })))
         const ts = await tRes.json()
         setSeries(Array.isArray(ts?.series) ? ts.series : [])
+        const fin = await fRes.json()
+        setFinance({
+          period_days: fin?.period_days || 7,
+          totals: fin?.totals || { revenue: 0, expenses: 0 },
+          revenue_series: Array.isArray(fin?.revenue_series) ? fin.revenue_series : [],
+          expenses_series: Array.isArray(fin?.expenses_series) ? fin.expenses_series : [],
+        })
         const convs = await cRes.json()
         const last = (Array.isArray(convs) ? convs : []).map((c: any) => {
           const m = (c.messages || [])[c.messages.length - 1]
@@ -76,7 +89,7 @@ export default function Dashboard() {
     conversionRate: summary.conversionRate,
   }), [summary])
 
-  // Improved top bar layout + polish
+  // Large topleft lottie, title beside it (centered)
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#eaf0fe] via-white to-[#f5eaff] py-10 px-2 md:px-8">
       <Script
@@ -85,35 +98,56 @@ export default function Dashboard() {
         onLoad={() => setLottieReady(true)}
       />
       <div className="max-w-6xl mx-auto">
-        <header className="flex flex-col-reverse gap-5 md:flex-row md:items-center md:justify-between md:gap-10 mb-10">
-          <div>
-            <h1 className="text-4xl font-black tracking-tight text-gray-900 drop-shadow-sm">Dashboard</h1>
-            <p className="text-gray-500 mt-1 text-base font-medium">Track your growth & engagement</p>
+        {/* Big header row: Lottie + Title and period toggle beside */}
+        <div className="flex flex-col items-center justify-center md:flex-row md:items-center md:justify-center md:gap-10 mb-10">
+          {/* Lottie, large, topleft */}
+          <div className="flex-shrink-0 flex justify-center items-center" style={{ minWidth: 140 }}>
+            <div className="overflow-hidden flex items-center justify-center" style={{ width: 120, height: 120 }}>
+              {lottieReady ? (
+                <DotLottieReact
+                  src="https://lottie.host/052258f6-e6ce-440f-9416-8f024c498f56/8lx73dN24F.lottie"
+                  loop
+                  autoplay
+                  style={{ width: 500, height: 500 }}
+                />
+              ) : (
+                <div className="w-[80px] h-[80px] flex items-center justify-center text-gray-300 text-2xl animate-pulse">...</div>
+              )}
+            </div>
           </div>
-          <div className="flex items-center gap-2 bg-white/90 border border-blue-100 shadow rounded-2xl px-2 py-1">
-            <button
-              onClick={() => setPeriod('7d')}
-              className={`px-5 py-2 rounded-full text-sm font-semibold transition focus:outline-none ${
-                period === '7d'
+          {/* Title & Subtitle and Period Toggle in a flex col for center alignment */}
+          <div className="flex-1 flex flex-col items-center md:flex-row md:items-center md:justify-center gap-4">
+            <div className="flex flex-col items-center md:items-start">
+              <h1 className="text-4xl font-black tracking-tight text-gray-900 drop-shadow-sm flex items-center gap-3 justify-center md:justify-start">
+                Dashboard
+              </h1>
+              <p className="text-gray-500 mt-1 text-base font-medium text-center md:text-left">
+                Track your growth & engagement
+              </p>
+            </div>
+            <div className="flex items-center gap-2 bg-white/90 border border-blue-100 shadow rounded-2xl px-2 py-1 self-center">
+              <button
+                onClick={() => setPeriod('7d')}
+                className={`px-5 py-2 rounded-full text-sm font-semibold transition focus:outline-none ${period === '7d'
                   ? 'bg-blue-600 text-white shadow'
                   : 'bg-blue-50 text-blue-700 hover:bg-blue-100'
-              }`}
-            >
-              Weekly
-            </button>
-            <button
-              onClick={() => setPeriod('30d')}
-              className={`px-5 py-2 rounded-full text-sm font-semibold transition focus:outline-none ${
-                period === '30d'
+                }`}
+              >
+                Weekly
+              </button>
+              <button
+                onClick={() => setPeriod('30d')}
+                className={`px-5 py-2 rounded-full text-sm font-semibold transition focus:outline-none ${period === '30d'
                   ? 'bg-purple-600 text-white shadow'
                   : 'bg-purple-50 text-purple-700 hover:bg-purple-100'
-              }`}
-            >
-              Monthly
-            </button>
+                }`}
+              >
+                Monthly
+              </button>
+            </div>
           </div>
-        </header>
-        {/* Main grid with metrics & Lottie */}
+        </div>
+        {/* Main grid with metrics */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-14 items-center">
           {/* Left Vertical Metrics */}
           <div className="flex flex-col h-full gap-7 justify-center items-center md:items-end">
@@ -136,26 +170,22 @@ export default function Dashboard() {
               value={metrics.activeConversations}
             />
           </div>
-          {/* Center Lottie, ensure ALWAYS animated */}
-          <div className="flex items-center justify-center h-full px-2">
-            <div className="rounded-2xl bg-gradient-to-br from-blue-100/90 via-white to-violet-100/90 shadow-2xl flex items-center justify-center overflow-hidden" style={{ width: 250, height: 250 }}>
-              {lottieReady ? (
-                <DotLottiePlayer
-                  src="https://lottie.host/39959db3-dd81-47b0-9e30-5c0216bbec3f/z2N6fbQG4F.lottie"
-                  background="transparent"
-                  speed="1"
-                  style={{
-                    width: 218,
-                    height: 218,
-                  }}
-                  // Fixes: force autoplay even if props not honored
-                  loop
-                  autoplay
-                />
-              ) : (
-                <div className="w-[218px] h-[218px] flex items-center justify-center text-gray-300 text-2xl animate-pulse">Loading...</div>
-              )}
-            </div>
+          {/* Center column: Finance mini cards */}
+          <div className="flex flex-col gap-7 items-stretch w-full">
+            <MiniCard
+              title="Revenue"
+              value={formatCurrency(finance.totals.revenue)}
+              gradientFrom="#8b5cf6"
+              gradientTo="#c084fc"
+              values={finance.revenue_series.map(s => s.value)}
+            />
+            <MiniCard
+              title="Expenses"
+              value={formatCurrency(finance.totals.expenses)}
+              gradientFrom="#2563eb"
+              gradientTo="#60a5fa"
+              values={finance.expenses_series.map(s => s.value)}
+            />
           </div>
           {/* Right Vertical Metrics: Booked Appointments + Conversion Rate */}
           <div className="flex flex-col h-full gap-7 justify-center items-center md:items-start">
@@ -163,7 +193,7 @@ export default function Dashboard() {
               title="Booked Appointments"
               icon={
                 <span className="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-purple-100 text-purple-600 shadow">
-                  <svg className="w-7 h-7" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24"><rect width="18" height="16" x="3" y="5" rx="2" /><path d="M16 2v4M8 2v4M3 10h18M8 14h.01M12 14h.01M16 14h.01"/></svg>
+                  <svg className="w-7 h-7" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24"><rect width="18" height="16" x="3" y="5" rx="2" /><path d="M16 2v4M8 2v4M3 10h18M8 14h.01M12 14h.01M16 14h.01" /></svg>
                 </span>
               }
               value={metrics.bookedAppointments}
@@ -172,7 +202,7 @@ export default function Dashboard() {
               title="Conversion Rate"
               icon={
                 <span className="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-pink-100 text-pink-600 shadow">
-                  <svg className="w-7 h-7" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24"><path d="M17 3v4a1 1 0 001 1h4"/><path d="M7 21H3a1 1 0 01-1-1v-4"/><path d="M21 12A9 9 0 117 3" /></svg>
+                  <svg className="w-7 h-7" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24"><path d="M17 3v4a1 1 0 001 1h4" /><path d="M7 21H3a1 1 0 01-1-1v-4" /><path d="M21 12A9 9 0 117 3" /></svg>
                 </span>
               }
               value={`${metrics.conversionRate.toFixed(1)}%`}
@@ -182,13 +212,13 @@ export default function Dashboard() {
         {/* Charts section */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-12">
           <ChartCard title="Leads" subtitle="New leads over time">
-            <Bars values={series.map(s => s.leads)} color="#2563eb" />
+            <Bars values={series.map(s => s.leads)} labels={series.map(s => s.date)} color="#2563eb" focus="leads" />
           </ChartCard>
           <ChartCard title="Outbound" subtitle="Outbound messages over time">
-            <Bars values={series.map(s => s.outbound)} color="#7c3aed" />
+            <Bars values={series.map(s => s.outbound)} labels={series.map(s => s.date)} color="#7c3aed" focus="outbound" />
           </ChartCard>
           <ChartCard title="Inbound" subtitle="Inbound replies over time">
-            <Bars values={series.map(s => s.inbound)} color="#16a34a" />
+            <Bars values={series.map(s => s.inbound)} labels={series.map(s => s.date)} color="#16a34a" focus="inbound" />
           </ChartCard>
         </div>
         {/* 2 columns: Recent Activity and Latest Leads */}
@@ -205,12 +235,12 @@ export default function Dashboard() {
               <ul className="divide-y">
                 {recentMsgs.map((m, i) => (
                   <li key={i} className="py-4 flex items-start gap-4">
-                    <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-200 to-blue-400 text-blue-800 flex items-center justify-center text-lg font-bold ring-2 ring-blue-200/60">{(m.lead||'?').split(' ').map((x:string)=>x[0]).join('').slice(0,2)}</div>
+                    <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-200 to-blue-400 text-blue-800 flex items-center justify-center text-lg font-bold ring-2 ring-blue-200/60">{(m.lead || '?').split(' ').map((x: string) => x[0]).join('').slice(0, 2)}</div>
                     <div className="flex-1 min-w-0">
                       <div className="text-base text-gray-900 font-semibold truncate">{m.lead}</div>
                       <div className="text-xs text-gray-600 mt-1 truncate">{m.content}</div>
                     </div>
-                    <div className="text-xs text-gray-400 whitespace-nowrap mt-2">{new Date(m.at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</div>
+                    <div className="text-xs text-gray-400 whitespace-nowrap mt-2">{new Date(m.at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
                   </li>
                 ))}
               </ul>
@@ -241,7 +271,7 @@ export default function Dashboard() {
                   {leads.length === 0 && (
                     <tr>
                       <td className="py-6 text-gray-400 text-lg text-center" colSpan={2}>
-                        No leads yet.<br/> <span className="text-xs">Connect your CRM and import.</span>
+                        No leads yet.<br /> <span className="text-xs">Connect your CRM and import.</span>
                       </td>
                     </tr>
                   )}
@@ -295,24 +325,93 @@ function ChartCard({
   )
 }
 
-function Bars({ values, color = '#2563eb' }: { values: number[]; color?: string }) {
+function Bars({ values, labels, color = '#2563eb', focus }: { values: number[]; labels?: string[]; color?: string; focus?: 'leads'|'outbound'|'inbound' }) {
+  const router = useRouter()
+  const [hover, setHover] = useState<number | null>(null)
   const max = Math.max(1, ...values)
-  // Fit up to 14 bars, fill available width.
   const effectiveLen = Math.min(14, values.length)
   const barWidth = effectiveLen > 0 ? 100 / effectiveLen : 100
+  const sliceValues = values.slice(-14)
+  const sliceLabels = (labels || []).slice(-(sliceValues.length))
   return (
     <div className="w-full h-full flex items-end gap-1 relative">
-      {values.slice(-14).map((v, i) => (
+      {sliceValues.map((v, i) => (
         <div
           key={i}
-          className="rounded-md transition-all duration-500"
+          className="rounded-md transition-all duration-300 cursor-pointer hover:opacity-100"
           style={{
             width: `${barWidth}%`,
-            height: `${(v / max) * 100}%`,
+            height: `${(v / Math.max(1,max)) * 100}%`,
             background: color,
-            opacity: 0.90,
+            opacity: 0.9,
             minHeight: '10%',
           }}
+          onMouseEnter={() => setHover(i)}
+          onMouseLeave={() => setHover(null)}
+          onClick={() => {
+            const d = sliceLabels[i]
+            if (d) router.push(`/analytics?date=${encodeURIComponent(d)}${focus?`&focus=${focus}`:''}`)
+          }}
+          title={sliceLabels[i] ? `${sliceLabels[i]}: ${v}` : String(v)}
+        />
+      ))}
+      {hover !== null && (
+        <div className="absolute -top-2 translate-y-[-100%] left-0 right-0 flex justify-center pointer-events-none">
+          <div className="bg-black/80 text-white text-xs px-2 py-1 rounded shadow">
+            <div>{sliceLabels[hover] || ''}</div>
+            <div className="font-semibold">{sliceValues[hover]}</div>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+// Helpers
+function formatCurrency(n: number) {
+  try {
+    return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(n || 0)
+  } catch {
+    return `$${Math.round(n || 0).toLocaleString()}`
+  }
+}
+
+function MiniCard({ title, value, values, gradientFrom, gradientTo }: { title: string; value: string | number; values: number[]; gradientFrom: string; gradientTo: string }) {
+  return (
+    <div className="bg-white rounded-2xl border shadow-sm px-6 py-5">
+      <div className="flex items-center justify-between mb-3">
+        <div className="text-base text-gray-500 font-medium tracking-wide">{title}</div>
+        <div className="text-2xl font-black text-gray-900">{value}</div>
+      </div>
+      <div className="h-12">
+        <BarsGradient values={values} from={gradientFrom} to={gradientTo} />
+      </div>
+    </div>
+  )
+}
+
+function BarsGradient({ values, from, to }: { values: number[]; from: string; to: string }) {
+  const [hover, setHover] = useState<number | null>(null)
+  const max = Math.max(1, ...values)
+  const effectiveLen = Math.min(18, values.length)
+  const barWidth = effectiveLen > 0 ? 100 / effectiveLen : 100
+  const sliceValues = values.slice(-effectiveLen)
+  return (
+    <div className="w-full h-full flex items-end gap-[6px]">
+      {sliceValues.map((v, i) => (
+        <div
+          key={i}
+          className="rounded-md transition-all duration-300"
+          style={{
+            width: `${barWidth}%`,
+            height: `${(v / Math.max(1, max)) * 100}%`,
+            background: `linear-gradient(180deg, ${from} 0%, ${to} 100%)`,
+            opacity: hover === i ? 1 : 0.9,
+            minHeight: '10%',
+          }}
+          onMouseEnter={() => setHover(i)}
+          onMouseLeave={() => setHover(null)}
+          title={String(v)}
         />
       ))}
     </div>
