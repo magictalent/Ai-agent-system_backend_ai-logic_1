@@ -24,8 +24,8 @@ export default function ClientsTable({ clients, onEdit, onDelete, loading }: Cli
   }
 
   const sortedClients = [...clients].sort((a, b) => {
-    const aValue = a[sortField]
-    const bValue = b[sortField]
+    const aValue = String(a[sortField] ?? '')
+    const bValue = String(b[sortField] ?? '')
     
     if (aValue < bValue) return sortDirection === 'asc' ? -1 : 1
     if (aValue > bValue) return sortDirection === 'asc' ? 1 : -1

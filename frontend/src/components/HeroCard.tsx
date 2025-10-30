@@ -4,6 +4,7 @@ interface HeroCardProps {
   message: string;
   imageUrl: string;
   name?: string; // Make name optional since we will detect logged in user
+  className?: string;
 }
 
 // The source of the logged in user could be via API, context, or localStorage.

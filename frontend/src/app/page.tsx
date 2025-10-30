@@ -2,7 +2,6 @@
 
 import Link from 'next/link'
 import { DotLottieReact } from '@lottiefiles/dotlottie-react'
-import StarryBackground from '@/components/StarryBackground'
 import React, { useEffect, useState, useRef } from 'react'
 
 // --- Carousel Slide Data ---

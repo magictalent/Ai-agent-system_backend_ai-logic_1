@@ -2,6 +2,7 @@ interface ReferralTrackingCardProps {
   invited: number;
   bonus: number;
   safetyScore: number; // should be between 0 and 10
+  className?: string;
 }
 
 export const ReferralTrackingCard = ({ invited, bonus, safetyScore }: ReferralTrackingCardProps) => {

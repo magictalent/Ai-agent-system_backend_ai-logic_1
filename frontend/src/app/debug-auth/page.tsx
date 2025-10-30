@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
 import { supabase } from '@/lib/supabase'
+import { Session } from '@supabase/supabase-js' // Import Session type
 
 export default function DebugAuthPage() {
   const { user, token, isLoading } = useAuth()
@@ -11,7 +12,7 @@ export default function DebugAuthPage() {
 
   useEffect(() => {
     // Check Supabase session directly
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    supabase.auth.getSession().then(({ data: { session } }: { data: { session: Session | null } }) => {
       setSupabaseSession(session)
     })
 
@@ -34,9 +35,9 @@ export default function DebugAuthPage() {
       } else if (data.session) {
         alert('Login successful!')
       }
-    } catch (err) {
+    } catch (err: unknown) {
       console.error('Login test error:', err)
-      alert(`Login error: ${err.message}`)
+      alert(`Login error: ${(err as Error).message}`)
     }
   }
 
@@ -60,9 +61,9 @@ export default function DebugAuthPage() {
       } else if (error) {
         alert(`Error: ${error.message}`)
       }
-    } catch (err) {
+    } catch (err: unknown) {
       console.error('User creation error:', err)
-      alert(`Error: ${err.message}`)
+      alert(`Error: ${(err as Error).message}`)
     }
   }
 

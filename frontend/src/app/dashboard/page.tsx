@@ -10,6 +10,11 @@ import { ReferralTrackingCard } from "@/components/ReferralTrackingCard";
 /** --- Types --- */
 type Lead = { id: string; firstname: string; lastname: string; email: string };
 
+interface SequenceWindowData {
+  sent_last_24h: number;
+  scheduled_next_24h: number;
+}
+
 const CRM_LIST = [
   {
     name: "HubSpot",
@@ -123,8 +128,8 @@ function DashboardPage() {
   useEffect(() => {
     if (!token) return;
     fetch("http://localhost:3001/dashboard/sequence-window", { headers: { Authorization: `Bearer ${token}` } })
-      .then((res) => (res.ok ? res.json() : {}))
-      .then((data) =>
+      .then(async (res) => (res.ok ? (await res.json() as SequenceWindowData) : {} as SequenceWindowData))
+      .then((data: SequenceWindowData) =>
         setNextSends({ last24: data?.sent_last_24h ?? 0, next24: data?.scheduled_next_24h ?? 0 })
       );
   }, [token]);

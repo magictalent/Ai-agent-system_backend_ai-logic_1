@@ -8,6 +8,8 @@ export interface Client {
   crm_provider: 'hubspot' | 'salesforce' | 'pipedrive' | 'mock'
   created_at: string
   updated_at: string
+  crm_connected: boolean;
+  ai_status: 'idle' | 'active' | 'paused';
 }
 
 export interface CreateClientData {

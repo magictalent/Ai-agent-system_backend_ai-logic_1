@@ -1,10 +1,24 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Client, CreateClientData } from '@/types/client'
+import { CreateClientData } from '@/types/client'
 import AddClientModal from '@/components/AddClientModal'
 import ClientsTable from '@/components/ClientsTable'
 import { useAuth } from '@/contexts/AuthContext'
+
+export interface Client {
+  id: string
+  user_id: string
+  name: string
+  email: string
+  phone?: string
+  industry?: string
+  crm_provider: 'hubspot' | 'salesforce' | 'pipedrive' | 'mock'
+  created_at: string
+  updated_at: string
+  crm_connected: boolean;
+  ai_status: 'idle' | 'active' | 'paused';
+}
 
 export default function ClientsPage() {
   const [clients, setClients] = useState<Client[]>([])

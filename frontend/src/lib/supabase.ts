@@ -1,4 +1,4 @@
-import { createClient } from '@supabase/supabase-js'
+import { createClient, AuthError } from '@supabase/supabase-js'
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
@@ -57,14 +57,14 @@ if (!supabaseUrl || !supabaseAnonKey ||
   console.log('✅ Supabase client initialized successfully')
   
   // Test the connection
-  supabase.auth.getSession().then(({ data, error }) => {
+  supabase.auth.getSession().then(({ error }: { error: AuthError | null }) => {
     if (error) {
       console.error('❌ Supabase connection test failed:', error.message)
     } else {
       console.log('✅ Supabase connection test passed')
     }
-  }).catch(err => {
-    console.error('❌ Supabase connection error:', err)
+  }).catch((err: unknown) => {
+    console.error('❌ Supabase connection error:', (err as Error).message)
   })
 }
 

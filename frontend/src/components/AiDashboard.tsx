@@ -116,9 +116,9 @@ export default function AiDashboard() {
                 const data = await response.json();
                 console.log('📊 Campaigns data:', data);
                 alert(`Found ${data.length} campaigns. Check console for details.`);
-              } catch (err) {
+              } catch (err: unknown) {
                 console.error('❌ Campaigns test failed:', err);
-                alert(`Campaigns test failed: ${err.message}`);
+                alert(`Campaigns test failed: ${(err as Error).message}`);
               }
             }}
             className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"

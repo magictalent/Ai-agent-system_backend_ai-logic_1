@@ -3,6 +3,7 @@ import { HiOutlineEmojiHappy } from "react-icons/hi";
 interface SatisfactionRateCardProps {
   rate: number;
   description: string;
+  className?: string;
 }
 
 export const SatisfactionRateCard = ({ rate, description }: SatisfactionRateCardProps) => {

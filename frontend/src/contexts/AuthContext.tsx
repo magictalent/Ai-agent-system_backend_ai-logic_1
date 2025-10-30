@@ -2,12 +2,14 @@
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react'
 import { supabase } from '@/lib/supabase'
+import { Session } from '@supabase/supabase-js' // Import Session type
 
 interface User {
   id: string
   email: string
   firstName: string
   lastName: string
+  name?: string // Added optional name property
   role: string
   organization: {
     id: string
@@ -32,7 +34,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     // Get initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    supabase.auth.getSession().then(({ data: { session } }: { data: { session: Session | null } }) => {
       if (session) {
         setToken(session.access_token)
         setUser({
@@ -40,6 +42,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           email: session.user.email || '',
           firstName: session.user.user_metadata?.first_name || '',
           lastName: session.user.user_metadata?.last_name || '',
+          name: `${session.user.user_metadata?.first_name || ''} ${session.user.user_metadata?.last_name || ''}`.trim() || undefined,
           role: session.user.role || 'user',
           organization: {
             id: session.user.user_metadata?.organization_id || '',
@@ -52,7 +55,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
+      async (event: string, session: Session | null) => {
         if (session) {
           setToken(session.access_token)
           setUser({
@@ -60,6 +63,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             email: session.user.email || '',
             firstName: session.user.user_metadata?.first_name || '',
             lastName: session.user.user_metadata?.last_name || '',
+            name: `${session.user.user_metadata?.first_name || ''} ${session.user.user_metadata?.last_name || ''}`.trim() || undefined,
             role: session.user.role || 'user',
             organization: {
               id: session.user.user_metadata?.organization_id || '',
@@ -100,6 +104,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         email: data.user.email || '',
         firstName: data.user.user_metadata?.first_name || '',
         lastName: data.user.user_metadata?.last_name || '',
+        name: `${data.user.user_metadata?.first_name || ''} ${data.user.user_metadata?.last_name || ''}`.trim() || undefined,
         role: data.user.role || 'user',
         organization: {
           id: data.user.user_metadata?.organization_id || '',
