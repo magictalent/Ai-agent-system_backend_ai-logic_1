@@ -1,5 +1,6 @@
-import { API_BASE } from '@/lib/api';
 'use client'
+
+import { API_BASE } from '@/lib/api';
 
 import { useEffect, useState } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
@@ -38,7 +39,7 @@ export default function OnboardingPage() {
     setStarting(true)
     setAutomationMsg('')
     try {
-      const res = await fetch(${API_BASE}/automation/run', {
+      const res = await fetch(`${API_BASE}/automation/run`, {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${token}` },
       })

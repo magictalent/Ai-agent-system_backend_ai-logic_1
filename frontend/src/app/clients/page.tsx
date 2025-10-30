@@ -1,6 +1,6 @@
-import { API_BASE } from '@/lib/api';
-'use client'
 
+'use client'
+import { API_BASE } from '@/lib/api';
 import { useState, useEffect } from 'react'
 import { CreateClientData } from '@/types/client'
 import AddClientModal from '@/components/AddClientModal'
