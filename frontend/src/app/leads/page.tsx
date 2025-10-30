@@ -1,6 +1,5 @@
-import { API_BASE } from '@/lib/api';
 'use client'
-
+import { API_BASE } from '@/lib/api';
 import { useEffect, useMemo, useState } from 'react'
 import { Search, Plus, Mail, Phone } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
@@ -86,7 +85,7 @@ export default function Leads() {
       setLoading(true)
       setError('')
       try {
-        const res = await fetch(${API_BASE}/crm/leads-db?limit=200', {
+        const res = await fetch(`${API_BASE}/crm/leads-db?limit=200`, {
           headers: { Authorization: `Bearer ${token}` },
         })
         if (!res.ok) throw new Error(await res.text())
@@ -106,7 +105,7 @@ export default function Leads() {
     const loadConversations = async () => {
       if (!token) return
       try {
-        const res = await fetch(${API_BASE}/messages/conversations', {
+        const res = await fetch(`${API_BASE}/messages/conversations`, {
           headers: { Authorization: `Bearer ${token}` },
         })
         if (!res.ok) return
@@ -298,7 +297,7 @@ export default function Leads() {
                     if (!token) return
                     setTickLoading(true)
                     try {
-                      const res = await fetch(${API_BASE}/sequences/tick?limit=25', {
+                      const res = await fetch(`${API_BASE}/sequences/tick?limit=25`, {
                         method: 'POST',
                         headers: { Authorization: `Bearer ${token}` },
                       })
@@ -309,7 +308,7 @@ export default function Leads() {
                       })
                       if (resConv.ok) setMessages(await resConv.json())
                       // reload index
-                      const resIdx = await fetch(${API_BASE}/messages/conversations', {
+                      const resIdx = await fetch(`${API_BASE}/messages/conversations`, {
                         headers: { Authorization: `Bearer ${token}` },
                       })
                       if (resIdx.ok) {
@@ -377,7 +376,7 @@ export default function Leads() {
                       if (!token || !selectedLead?.id || !simText.trim()) return
                       setSimLoading(true)
                       try {
-                        const res = await fetch(${API_BASE}/messages/simulate', {
+                        const res = await fetch(`${API_BASE}/messages/simulate`, {
                           method: 'POST',
                           headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
                           body: JSON.stringify({ leadId: selectedLead.id, content: simText.trim() }),
@@ -387,7 +386,7 @@ export default function Leads() {
                         // Refresh conversation and index
                         const resConv = await fetch(`${API_BASE}/messages/lead/${encodeURIComponent(selectedLead.id)}`, { headers: { Authorization: `Bearer ${token}` } })
                         if (resConv.ok) setMessages(await resConv.json())
-                        const resIdx = await fetch(${API_BASE}/messages/conversations', { headers: { Authorization: `Bearer ${token}` } })
+                        const resIdx = await fetch(`${API_BASE}/messages/conversations`, { headers: { Authorization: `Bearer ${token}` } })
                         if (resIdx.ok) {
                           const list = await resIdx.json()
                           const map: Record<string, { count: number; last: string; lastDirection: 'outbound'|'inbound' }> = {}

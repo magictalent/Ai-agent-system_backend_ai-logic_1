@@ -1,5 +1,5 @@
-import { API_BASE } from '@/lib/api';
 'use client'
+import { API_BASE } from '@/lib/api';
 
 import { useState, useEffect } from 'react'
 import { Conversation, MessageFilters } from '@/types/message'

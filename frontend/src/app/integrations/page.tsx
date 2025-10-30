@@ -1,6 +1,5 @@
-import { API_BASE } from '@/lib/api';
 'use client'
-
+import { API_BASE } from '@/lib/api';
 import { useEffect, useState } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
 
@@ -31,7 +30,7 @@ export default function IntegrationsPage() {
 
   const fetchStatus = async () => {
     try {
-      const res = await fetch(${API_BASE}/crm/status')
+      const res = await fetch(`${API_BASE}/crm/status`)
       if (res.ok) {
         const data = await res.json()
         setStatus(data)
@@ -45,7 +44,7 @@ export default function IntegrationsPage() {
     const fetchHubspot = async () => {
       if (!token) return
       try {
-        const res = await fetch(${API_BASE}/hubspot/auth/status', {
+        const res = await fetch(`${API_BASE}/hubspot/auth/status`, {
           headers: { Authorization: `Bearer ${token}` },
         })
         if (res.ok) {
@@ -111,7 +110,7 @@ export default function IntegrationsPage() {
     const t = authToken ?? token
     if (!t) { setMessage('Please log in first'); return }
     try {
-      await fetch(${API_BASE}/hubspot/auth/disconnect', {
+      await fetch(`${API_BASE}/hubspot/auth/disconnect`, {
         headers: { Authorization: `Bearer ${t}` },
       })
       await startHubspotConnect(t)

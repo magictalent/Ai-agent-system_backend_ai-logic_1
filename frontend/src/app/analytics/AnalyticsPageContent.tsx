@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { useAuth } from "@/contexts/AuthContext";\nimport { API_BASE } from "@/lib/api";
+import { useAuth } from "@/contexts/AuthContext";
+import { API_BASE } from "@/lib/api";
 import { useRouter, useSearchParams } from "next/navigation";
 
 type SeriesRow = { date: string; leads: number; outbound: number; inbound: number; appointments: number };

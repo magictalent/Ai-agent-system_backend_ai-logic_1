@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { useAuth } from "@/contexts/AuthContext";\nimport { API_BASE } from "@/lib/api";
+import { useAuth } from "@/contexts/AuthContext";
+import { API_BASE } from "@/lib/api";
 
 export default function AutomationPage() {
   const { token } = useAuth();
@@ -50,6 +51,7 @@ export default function AutomationPage() {
     </div>
   );
 }
+
 
 
 
