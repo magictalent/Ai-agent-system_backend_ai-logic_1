@@ -26,12 +26,14 @@ export default function Topbar() {
           <Menu size={20} />
         </button>
         <div className="flex items-center gap-2">
-          <img
-            src="/logo23.png"
-            alt="AI Sales Agents Logo"
-            className="w-30 h-30 object-contain"
-            draggable={false}
-          />
+          <Link href="/">
+            <img
+              src="/logo23.png"
+              alt="AI Sales Agents Logo"
+              className="w-30 h-30 object-contain"
+              draggable={false}
+            />
+          </Link>
         </div>
       </div>
       {/* Center: Search */}

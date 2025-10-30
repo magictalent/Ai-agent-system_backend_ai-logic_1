@@ -37,7 +37,7 @@ const groups: Group[] = [
   ] },
   { key: 'analytics', icon: BarChart4, label: 'Analytics', items: [{ label: 'Overview', href: '/analytics' }] },
   { key: 'integrations', icon: Wrench, label: 'Integrations', items: [{ label: 'Manage', href: '/integrations' }] },
-  { key: 'settings', icon: Cog, label: 'Settings', items: [{ label: 'Profile', href: '/settings' }] },
+  { key: 'settings', icon: Cog, label: 'Settings', items: [{ label: 'Profile', href: '/developing' }] },
   { key: 'calendar', icon: Cog, label: 'Calendar', items: [{ label: 'Calendar', href: '/calendar' }] },
   { key: 'pricing', icon: TicketCheck, label: 'Pricing', items: [{ label: 'Pricing', href: '/pricing' }] },
   { key: 'help', icon: MessageCircle, label: 'Help', items: [{ label: 'Help', href: '/developing' }] },

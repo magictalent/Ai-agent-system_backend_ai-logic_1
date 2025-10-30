@@ -2,9 +2,92 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Campaign, CreateCampaignData } from '@/types/campaign'
-import CampaignCard from '@/components/CampaignCard'
+import { Campaign } from '@/types/campaign'
 import { useAuth } from '@/contexts/AuthContext'
+
+// A simple details component
+function CampaignDetails({
+  campaign,
+  onEdit,
+  onStart,
+  onPause,
+  onStop,
+  onDelete,
+  loadingActionId,
+}: {
+  campaign: Campaign | null,
+  onEdit: (c: Campaign) => void,
+  onStart: (id: string) => void,
+  onPause: (id: string) => void,
+  onStop: (id: string) => void,
+  onDelete: (id: string) => void,
+  loadingActionId: string | null,
+}) {
+  if (!campaign) {
+    return (
+      <div className="flex flex-col items-center justify-center h-full">
+        <div className="text-gray-400 text-lg mb-2"><img src="/icons/chart.png" className="w-14 h-14 mb-2 opacity-50" alt="Select" /></div>
+        <span className="text-gray-400">Select a campaign from the list</span>
+      </div>
+    )
+  }
+
+  return (
+    <div className="p-8">
+      <h2 className="text-2xl font-bold text-gray-900 mb-2">{campaign.name}</h2>
+      <div className="mb-1 text-gray-600">for <b>{campaign.client_name}</b></div>
+      <div className="flex flex-wrap gap-4 mb-6">
+        <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-gray-100 text-gray-700">
+          Status: <span className="ml-1">
+            {campaign.status === 'active' && <span className="text-green-600">Active</span>}
+            {campaign.status === 'paused' && <span className="text-yellow-500">Paused</span>}
+            {campaign.status === 'draft' && <span className="text-gray-500">Draft</span>}
+            {campaign.status === 'completed' && <span className="text-blue-600">Completed</span>}
+          </span>
+        </span>
+        <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-blue-50 text-blue-800">Channel: {campaign.channel || 'email'}</span>
+        <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-purple-50 text-purple-800">Tone: {(campaign as any).tone || 'friendly'}</span>
+        <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-pink-50 text-pink-800">Leads: {campaign.leads_count}</span>
+      </div>
+      <div className="mb-4">
+        <div className="font-medium text-gray-800 mb-2">Campaign Info</div>
+        <div className="text-sm text-gray-600 whitespace-pre-line">{campaign.description || <span className="italic text-gray-400">No description</span>}</div>
+      </div>
+      <div className="flex gap-3 flex-wrap">
+        <button className="px-4 py-2 rounded bg-blue-600 text-white hover:bg-blue-700" onClick={() => onEdit(campaign)}>Edit</button>
+        {campaign.status === 'draft' && (
+          <button
+            className={`px-4 py-2 rounded bg-green-600 text-white hover:bg-green-700 ${loadingActionId===campaign.id ? 'opacity-60 cursor-wait' : ''}`}
+            onClick={() => onStart(campaign.id)}
+            disabled={loadingActionId===campaign.id}
+          >Start</button>
+        )}
+        {campaign.status === 'active' && (
+          <>
+            <button
+              className={`px-4 py-2 rounded bg-yellow-500 text-white hover:bg-yellow-600 ${loadingActionId===campaign.id ? 'opacity-60 cursor-wait' : ''}`}
+              onClick={() => onPause(campaign.id)}
+              disabled={loadingActionId===campaign.id}
+            >Pause</button>
+            <button
+              className={`px-4 py-2 rounded bg-blue-500 text-white hover:bg-blue-600 ${loadingActionId===campaign.id ? 'opacity-60 cursor-wait' : ''}`}
+              onClick={() => onStop(campaign.id)}
+              disabled={loadingActionId===campaign.id}
+            >Stop</button>
+          </>
+        )}
+        {(campaign.status === 'paused' || campaign.status === 'completed' || campaign.status === 'draft') && (
+          <button
+            className={`px-4 py-2 rounded bg-red-500 text-white hover:bg-red-600 ${loadingActionId===campaign.id ? 'opacity-60 cursor-wait' : ''}`}
+            onClick={() => onDelete(campaign.id)}
+            disabled={loadingActionId===campaign.id}
+          >Delete</button>
+        )}
+      </div>
+    </div>
+  )
+}
+
 
 export default function CampaignsPage() {
   const [campaigns, setCampaigns] = useState<Campaign[]>([])
@@ -14,6 +97,8 @@ export default function CampaignsPage() {
   const [filterChannel, setFilterChannel] = useState<string>('all')
   const [filterTone, setFilterTone] = useState<string>('all')
   const [error, setError] = useState('')
+  const [selectedCampaignId, setSelectedCampaignId] = useState<string | null>(null)
+  const [loadingActionId, setLoadingActionId] = useState<string | null>(null)
   const { user, token } = useAuth()
   const router = useRouter()
 
@@ -24,15 +109,19 @@ export default function CampaignsPage() {
       if (!token) { setError('Missing user token. Please re-login.'); setLoading(false); return }
       const camps = await fetch('http://localhost:3001/campaigns', { headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' } })
       if (!camps.ok) throw new Error(await camps.text())
-      setCampaigns(await camps.json())
+      const json = await camps.json()
+      setCampaigns(json)
+      // Select first campaign if none selected
+      if (!selectedCampaignId && json.length > 0) setSelectedCampaignId(json[0].id)
     } catch (e: any) {
       setError(e?.message || 'Failed to load data')
-    } finally { setLoading(false) }
+    } finally {
+      setLoading(false)
+    }
   }
 
-  // Creation and editing moved to /campaigns/new
-
   const handleStartCampaign = async (campaignId: string) => {
+    setLoadingActionId(campaignId)
     try {
       const response = await fetch(`http://localhost:3001/campaigns/${campaignId}/start`, { method: 'POST', headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' } })
       if (!response.ok) throw new Error('Failed to start campaign')
@@ -40,23 +129,66 @@ export default function CampaignsPage() {
       const camp = campaigns.find(c => c.id === campaignId)
       if (camp) {
         try {
-          const bulk = await fetch('http://localhost:3001/sequences/start-all', { method: 'POST', headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ clientId: camp.client_id, campaignId: camp.id, channel: 'email', tone: (camp as any).tone || 'friendly' }) })
+          const bulk = await fetch('http://localhost:3001/sequences/start-all', {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+            body: JSON.stringify({ clientId: camp.client_id, campaignId: camp.id, channel: 'email', tone: (camp as any).tone || 'friendly' })
+          })
           const data = await bulk.json()
           if (!bulk.ok) throw new Error(data?.message || 'Failed to enqueue sequences')
           setError(`Enqueued ${data.enqueued} leads (${data.steps_created} steps) for '${camp.name}'`)
         } catch (e: any) { setError(e.message) }
       }
-    } catch (e: any) { setError(e?.message || 'Failed to start') }
+    } catch (e: any) {
+      setError(e?.message || 'Failed to start')
+    } finally {
+      setLoadingActionId(null)
+    }
   }
 
   const handlePauseCampaign = async (campaignId: string) => {
-    try { const res = await fetch(`http://localhost:3001/campaigns/${campaignId}/pause`, { method: 'POST', headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' } }); if (!res.ok) throw new Error('Failed to pause campaign'); setCampaigns(prev => prev.map(c => c.id === campaignId ? { ...c, status: 'paused' as const } : c)) } catch (e: any) { setError(e?.message || 'Failed to pause') }
+    setLoadingActionId(campaignId)
+    try {
+      const res = await fetch(`http://localhost:3001/campaigns/${campaignId}/pause`, { method: 'POST', headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' } })
+      if (!res.ok) throw new Error('Failed to pause campaign')
+      setCampaigns(prev => prev.map(c => c.id === campaignId ? { ...c, status: 'paused' as const } : c))
+    } catch (e: any) {
+      setError(e?.message || 'Failed to pause')
+    } finally {
+      setLoadingActionId(null)
+    }
   }
   const handleStopCampaign = async (campaignId: string) => {
-    try { const res = await fetch(`http://localhost:3001/campaigns/${campaignId}/stop`, { method: 'POST', headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' } }); if (!res.ok) throw new Error('Failed to stop campaign'); setCampaigns(prev => prev.map(c => c.id === campaignId ? { ...c, status: 'completed' as const } : c)) } catch (e: any) { setError(e?.message || 'Failed to stop') }
+    setLoadingActionId(campaignId)
+    try {
+      const res = await fetch(`http://localhost:3001/campaigns/${campaignId}/stop`, { method: 'POST', headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' } })
+      if (!res.ok) throw new Error('Failed to stop campaign')
+      setCampaigns(prev => prev.map(c => c.id === campaignId ? { ...c, status: 'completed' as const } : c))
+    } catch (e: any) {
+      setError(e?.message || 'Failed to stop')
+    } finally {
+      setLoadingActionId(null)
+    }
   }
   const handleDeleteCampaign = async (campaignId: string) => {
-    try { if (!confirm('Delete this campaign? This cannot be undone.')) return; const res = await fetch(`http://localhost:3001/campaigns/${campaignId}`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' } }); if (!res.ok) throw new Error((await res.text()) || 'Failed to delete campaign'); setCampaigns(prev => prev.filter(c => c.id !== campaignId)) } catch (e: any) { setError(e?.message || 'Failed to delete') }
+    if (!confirm('Delete this campaign? This cannot be undone.')) return;
+    setLoadingActionId(campaignId)
+    try {
+      const res = await fetch(`http://localhost:3001/campaigns/${campaignId}`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' } })
+      if (!res.ok) throw new Error((await res.text()) || 'Failed to delete campaign')
+      setCampaigns(prev => prev.filter(c => c.id !== campaignId))
+      // If deleted campaign is selected, select another
+      if (selectedCampaignId === campaignId) {
+        setSelectedCampaignId(prev => {
+          const next = campaigns.find(c => c.id !== campaignId)
+          return next ? next.id : null
+        })
+      }
+    } catch (e: any) {
+      setError(e?.message || 'Failed to delete')
+    } finally {
+      setLoadingActionId(null)
+    }
   }
   const handleEditCampaign = (campaign: Campaign) => { router.push(`/campaigns/new?edit=${campaign.id}`) }
 
@@ -70,8 +202,6 @@ export default function CampaignsPage() {
   })
 
   useEffect(() => { if (user && token) fetchData() }, [user, token])
-
-  // Inline create panel removed; use /campaigns/new instead
 
   if (!user) {
     return (
@@ -105,7 +235,13 @@ export default function CampaignsPage() {
         <div className="mb-6 flex flex-col sm:flex-row gap-4">
           <div className="flex-1">
             <div className="relative">
-              <input type="text" placeholder="Search campaigns..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" />
+              <input
+                type="text"
+                placeholder="Search campaigns..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                 <img src="/icons/search.png" alt="Search" className="w-5 h-5 text-gray-400" />
               </div>
@@ -140,54 +276,68 @@ export default function CampaignsPage() {
           </div>
         )}
 
-        {/* Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-          <div className="bg-white p-6 rounded-lg shadow"><div className="flex items-center"><div className="p-2 bg-blue-100 rounded-lg flex items-center justify-center"><img src="/icons/chart.png" alt="Total Campaigns" className="w-7 h-7" /></div><div className="ml-4"><p className="text-sm font-medium text-gray-500">Total Campaigns</p><p className="text-2xl font-bold text-gray-900">{campaigns.length}</p></div></div></div>
-          <div className="bg-white p-6 rounded-lg shadow"><div className="flex items-center"><div className="p-2 bg-green-100 rounded-lg flex items-center justify-center"><img src="/icons/start.png" alt="Active" className="w-7 h-7" /></div><div className="ml-4"><p className="text-sm font-medium text-gray-500">Active</p><p className="text-2xl font-bold text-gray-900">{campaigns.filter(c => c.status === 'active').length}</p></div></div></div>
-          <div className="bg-white p-6 rounded-lg shadow"><div className="flex items-center"><div className="p-2 bg-yellow-100 rounded-lg flex items-center justify-center"><img src="/icons/pause.png" alt="Paused" className="w-7 h-7" /></div><div className="ml-4"><p className="text-sm font-medium text-gray-500">Paused</p><p className="text-2xl font-bold text-gray-900">{campaigns.filter(c => c.status === 'paused').length}</p></div></div></div>
-          <div className="bg-white p-6 rounded-lg shadow"><div className="flex items-center"><div className="p-2 bg-purple-100 rounded-lg flex items-center justify-center"><img src="/icons/users.png" alt="Total Leads" className="w-7 h-7" /></div><div className="ml-4"><p className="text-sm font-medium text-gray-500">Total Leads</p><p className="text-2xl font-bold text-gray-900">{campaigns.reduce((sum, c) => sum + c.leads_count, 0)}</p></div></div></div>
-        </div>
-
-        {/* List + Form */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          <div className="lg:col-span-2">
-            {loading ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {[...Array(6)].map((_, i) => (
-                  <div key={i} className="bg-white rounded-lg shadow p-6 animate-pulse">
-                    <div className="h-4 bg-gray-200 rounded w-3/4 mb-4"></div>
-                    <div className="h-3 bg-gray-200 rounded w-1/2 mb-6"></div>
-                    <div className="grid grid-cols-3 gap-4 mb-6">
-                      <div className="h-8 bg-gray-200 rounded"></div>
-                      <div className="h-8 bg-gray-200 rounded"></div>
-                      <div className="h-8 bg-gray-200 rounded"></div>
-                    </div>
-                    <div className="flex space-x-3">
-                      <div className="h-8 bg-gray-200 rounded w-20"></div>
-                      <div className="h-8 bg-gray-200 rounded w-16"></div>
-                    </div>
-                  </div>
-                ))}
+        {/* Sidebar+Main */}
+        <div className="flex bg-white rounded-lg shadow-md min-h-[32rem] overflow-hidden" style={{ minHeight: '28rem' }}>
+          {/* Sidebar */}
+          <aside className="w-[18rem] border-r bg-gray-50 hidden md:block">
+            <div className="h-full flex flex-col">
+              <div className="px-4 py-4 border-b text-sm font-medium text-gray-500 bg-gray-100">CAMPAIGNS</div>
+              {loading ? (
+                <div className="flex-1 px-4 py-3 text-gray-300 animate-pulse">Loading...</div>
+              ) : filteredCampaigns.length === 0 ? (
+                <div className="flex-1 px-4 py-8 text-gray-400 text-center">
+                  <img src="/icons/chart.png" alt="No Campaigns" className="mx-auto w-10 h-10 opacity-50 mb-2" />
+                  <div>No campaigns</div>
+                </div>
+              ) : (
+                <ul className="flex-1 overflow-y-auto">
+                  {filteredCampaigns.map((c) => (
+                    <li key={c.id}
+                        className={`py-3 px-4 border-b border-dashed border-gray-100 hover:bg-blue-50 cursor-pointer flex items-center transition-colors ${selectedCampaignId === c.id ? 'bg-blue-100 font-bold text-blue-900' : 'text-gray-800'}`}
+                        onClick={() => setSelectedCampaignId(c.id)}
+                    >
+                      <span className="flex-1 truncate">{c.name}</span>
+                      {c.status === 'active' && <span className="ml-2 rounded-full w-2.5 h-2.5 bg-green-500 inline-block" title="Active"></span>}
+                      {c.status === 'paused' && <span className="ml-2 rounded-full w-2.5 h-2.5 bg-yellow-400 inline-block" title="Paused"></span>}
+                    </li>
+                  ))}
+                </ul>
+              )}
+              <div className="px-4 py-4 border-t bg-white">
+                <button onClick={() => router.push('/campaigns/new')} className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded transition-colors flex items-center justify-center"><img src="/icons/plus.png" alt="New" className="w-5 h-5 mr-2" /> New Campaign</button>
               </div>
-            ) : filteredCampaigns.length === 0 ? (
-              <div className="bg-white rounded-lg shadow p-12 text-center">
-                <div className="mb-4 flex justify-center"><img src="/icons/chart.png" alt="No Campaigns" className="w-16 h-16 text-gray-400" /></div>
-                <h3 className="text-lg font-medium text-gray-900 mb-2">No campaigns found</h3>
-                <p className="text-gray-500 mb-6">{searchTerm || filterStatus !== 'all' ? 'Try adjusting your search or filter criteria' : 'Get started by creating your first campaign'}</p>
-                {!searchTerm && filterStatus === 'all' && (
-                  <button onClick={() => router.push('/campaigns/new')} className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors">Create Your First Campaign</button>
-                )}
-              </div>
+            </div>
+          </aside>
+          {/* Mobile Sidebar dropdown */}
+          <aside className="block md:hidden w-full border-b bg-gray-100">
+            {filteredCampaigns.length ? (
+              <select
+                className="w-full px-3 py-3 border-0 bg-gray-100 text-gray-800"
+                value={selectedCampaignId || ''}
+                onChange={e => setSelectedCampaignId(e.target.value)}
+              >
+                {filteredCampaigns.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+              </select>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {filteredCampaigns.map((campaign) => (
-                  <CampaignCard key={campaign.id} campaign={campaign} onEdit={handleEditCampaign} onStart={handleStartCampaign} onPause={handlePauseCampaign} onStop={handleStopCampaign} onDelete={handleDeleteCampaign} />
-                ))}
-              </div>
+              <div className="px-4 py-3 text-gray-400">No campaigns</div>
             )}
-          </div>
-
-          {/* Right column removed: creation moved to /campaigns/new */}
+          </aside>
+          {/* Main Details */}
+          <main className="flex-1 min-h-[24rem]">
+            {loading ? (
+              <div className="flex items-center justify-center h-full"><div className="text-gray-300 text-lg animate-pulse">Loading...</div></div>
+            ) : (
+              <CampaignDetails
+                campaign={campaigns.find(c => c.id === selectedCampaignId) || null}
+                onEdit={handleEditCampaign}
+                onStart={handleStartCampaign}
+                onPause={handlePauseCampaign}
+                onStop={handleStopCampaign}
+                onDelete={handleDeleteCampaign}
+                loadingActionId={loadingActionId}
+              />
+            )}
+          </main>
         </div>
       </div>
     </div>

@@ -11,7 +11,7 @@ const lexendDeca = Lexend_Deca({
 })
 
 export const metadata: Metadata = {
-  title: 'AI Sales Agents - Dashboard',
+  title: 'Sellient',
   description: '24/7 AI-powered sales automation platform',
 }
 
