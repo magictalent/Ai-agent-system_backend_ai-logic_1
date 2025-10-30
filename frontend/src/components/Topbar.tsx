@@ -52,14 +52,28 @@ export default function Topbar() {
 
       {/* Right: Actions */}
       <div className="flex items-center gap-1 md:gap-2">
-        <button className="hidden md:inline px-3 py-1.5 text-sm rounded-full bg-white/10 hover:bg-white/15 text-white border border-white/20">Upgrade</button>
-        <button className="p-2 text-white/90 hover:bg-white/10 rounded" aria-label="Help"><HelpCircle size={18} /></button>
-        <button className="p-2 text-white/90 hover:bg-white/10 rounded" aria-label="Settings"><Settings size={18} /></button>
+        <Link
+          href="/upgrade"
+          className="hidden md:inline px-3 py-1.5 text-sm rounded-full bg-white/10 hover:bg-white/15 text-white border border-white/20"
+        >
+          Upgrade
+        </Link>
+        <Link href="/help" className="p-2 text-white/90 hover:bg-white/10 rounded" aria-label="Help">
+          <HelpCircle size={18} />
+        </Link>
+        <Link href="/settings" className="p-2 text-white/90 hover:bg-white/10 rounded" aria-label="Settings">
+          <Settings size={18} />
+        </Link>
         <button className="relative p-2 text-[#FFB051] hover:bg-white/10 rounded" aria-label="Notifications">
           <Bell size={18} />
           <span className="absolute top-[6px] right-[6px] w-2 h-2 bg-[#FFB051] rounded-full border-2 border-[#4C1C3F]"></span>
         </button>
-        <button className="hidden sm:inline-flex items-center gap-1 px-3 py-1.5 text-sm rounded-full bg-[#FFDDB0] text-[#5A314F] hover:brightness-95">
+        <button
+          className="hidden sm:inline-flex items-center gap-1 px-3 py-1.5 text-sm rounded-full bg-[#FFDDB0] text-[#5A314F] hover:brightness-95"
+          onClick={() => {
+            if (typeof window !== 'undefined') window.dispatchEvent(new Event('toggle-assistant'))
+          }}
+        >
           <Sparkles size={16} /> Assistant
         </button>
         {/* User menu */}
@@ -104,4 +118,3 @@ function getTitleFromPath(path: string) {
   const first = path.split('/').filter(Boolean)[0];
   return map[first] || first.charAt(0).toUpperCase() + first.slice(1);
 }
-

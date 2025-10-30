@@ -71,6 +71,7 @@ function DashboardPage() {
   const [error, setError] = useState<string | null>(null);
   const [leads, setLeads] = useState<Lead[]>([]);
   const [topReplyRates, setTopReplyRates] = useState<Array<{ campaign_name: string; reply_rate: number; outbound_last_24h?: number; replies_last_24h?: number }>>([]);
+  const [replyErrorTiles, setReplyErrorTiles] = useState<{ repliesLast24: number; errorsLast24: number }>({ repliesLast24: 0, errorsLast24: 0 });
   const [metrics, setMetrics] = useState<{ bookedAppointments: number; conversionRate: number; contactedLast24?: number }>({ bookedAppointments: 0, conversionRate: 0 });
 
   const [series, setSeries] = useState<
@@ -102,6 +103,7 @@ function DashboardPage() {
         setMetrics({
           bookedAppointments: summary.bookedAppointments ?? 0,
           conversionRate: summary.conversionRate ?? 0,
+          contactedLast24: summary.contactedLast24 ?? 0,
         });
         setSeries(Array.isArray(tsJson?.series) ? tsJson.series : []);
         setLeads(Array.isArray(recentJson) ? recentJson : []);
@@ -125,6 +127,25 @@ function DashboardPage() {
       .then((data) =>
         setNextSends({ last24: data?.sent_last_24h ?? 0, next24: data?.scheduled_next_24h ?? 0 })
       );
+  }, [token]);
+
+  // Fetch reply rates + errors tile
+  useEffect(() => {
+    if (!token) return;
+    fetch("http://localhost:3001/dashboard/replies-errors", { headers: { Authorization: `Bearer ${token}` } })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (!data) return;
+        setTopReplyRates(Array.isArray(data?.reply_rates_by_campaign) ? data.reply_rates_by_campaign.slice(0, 5) : []);
+        setReplyErrorTiles({
+          repliesLast24: Number(data?.replies_last_24h ?? 0),
+          errorsLast24: Number(data?.errors_last_24h ?? 0),
+        });
+      })
+      .catch(() => {
+        setTopReplyRates([]);
+        setReplyErrorTiles({ repliesLast24: 0, errorsLast24: 0 });
+      });
   }, [token]);
 
   const userName = useMemo(
@@ -231,24 +252,24 @@ function DashboardPage() {
           }
         />
         <StatCard
-          title="New Clients"
-          value="+3,462"
-          percentage="-2%"
+          title="Replies (24h)"
+          value={replyErrorTiles.repliesLast24.toString()}
+          percentage=""
           icon={
-            <svg className="w-8 h-8 text-red-500/90" fill="none" stroke="currentColor" strokeWidth={2.2} viewBox="0 0 28 28">
-              <rect x={4} y={4} width={20} height={20} rx={7} className="stroke-current opacity-25" />
-              <path d="M10 10h8v8h-8z" fill="currentColor" />
+            <svg className="w-8 h-8 text-blue-600/90" fill="none" stroke="currentColor" strokeWidth={2.2} viewBox="0 0 28 28">
+              <circle cx="14" cy="14" r="12" className="stroke-current opacity-25" />
+              <path d="M6 10h16M6 14h10M6 18h8" className="stroke-current" />
             </svg>
           }
         />
         <StatCard
-          title="Total Sales"
-          value="$103,430"
-          percentage="+5%"
+          title="Errors (24h)"
+          value={replyErrorTiles.errorsLast24.toString()}
+          percentage=""
           icon={
-            <svg className="w-8 h-8 text-purple-500/90" fill="none" stroke="currentColor" strokeWidth={2.2} viewBox="0 0 28 28">
+            <svg className="w-8 h-8 text-red-600/90" fill="none" stroke="currentColor" strokeWidth={2.2} viewBox="0 0 28 28">
               <circle cx="14" cy="14" r="12" className="stroke-current opacity-30" />
-              <path d="M18 14a4 4 0 1 1-8 0 4 4 0 0 1 8 0Z" fill="currentColor" />
+              <path d="M14 8v8M14 20h.01" className="stroke-current" />
             </svg>
           }
         />
@@ -296,6 +317,27 @@ function DashboardPage() {
           </div>
         </div>
         <ReferralTrackingCard invited={145} bonus={1465} safetyScore={9.3} className="bg-white/90" />
+      </div>
+      {/* Top campaigns by reply rate */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-7 mb-7">
+        <div className="bg-white/90 rounded-2xl p-6 shadow-xl lg:col-span-1">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-gray-800 font-semibold">Top Campaigns (24h)</h3>
+            <span className="text-xs text-gray-400">Reply rate</span>
+          </div>
+          {topReplyRates.length === 0 ? (
+            <div className="text-sm text-gray-400">No recent activity</div>
+          ) : (
+            <ul className="divide-y divide-gray-100">
+              {topReplyRates.map((c, idx) => (
+                <li key={idx} className="py-2 flex items-center justify-between">
+                  <div className="truncate pr-3 text-gray-700">{c.campaign_name}</div>
+                  <div className="text-sm font-semibold text-blue-700">{c.reply_rate}%</div>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-7 rounded-2xl">
         {activeUserCards}

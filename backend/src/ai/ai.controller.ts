@@ -20,4 +20,11 @@ export class AiController {
   async bookMeeting(@Body() body: { clientId: string; leadId: string; time: string }, @CurrentUser() user: any) {
     return this.aiService.bookMeeting(body.clientId, body.leadId, body.time, user.id);
   }
+
+  // Generic assistant chat endpoint used by the UI slide-over panel
+  @Post('assistant')
+  async assistant(@Body() body: { prompt: string; context?: any }, @CurrentUser() user: any) {
+    const text = await this.aiService.simpleAssistantChat(body.prompt, body.context, user?.id);
+    return { text };
+  }
 }

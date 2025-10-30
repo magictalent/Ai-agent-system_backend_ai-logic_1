@@ -231,7 +231,7 @@ export default function CampaignsPage() {
       if (!bulk.ok) throw new Error(data?.message || 'Failed to enqueue sequences')
       // Bubble the result to detail instead of page banner
       setCampaigns(prev => prev.map(c => c.id === camp.id ? { ...c, leads_count: (c.leads_count ?? 0) + (data.enqueued ?? 0) } : c))
-      try { await fetch('http://localhost:3001/sequences/tick', { method: 'POST', headers: { 'Authorization': `Bearer ${token}` } }) } catch {}
+      try { await fetch('http://localhost:3001/sequences/tick?force=1', { method: 'POST', headers: { 'Authorization': `Bearer ${token}` } }) } catch {}
     } catch (e:any) {
       setError(e?.message || 'Broadcast failed')
     } finally {
@@ -429,3 +429,4 @@ export default function CampaignsPage() {
     </div>
   )
 }
+

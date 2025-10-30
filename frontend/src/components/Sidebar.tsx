@@ -2,12 +2,12 @@
 
 import Calendar from '@/app/calendar/page'
 import { sign } from 'crypto'
-import { LayoutDashboard,DollarSign, Megaphone, Users, MessageCircle, BarChart4, Calendar1, Wrench, Cog, Building2, Factory, TicketCheck, Phone, ListChecks,HelpCircle, BookOpenCheck, MessageSquareDashed, Scissors, ChevronRight } from 'lucide-react'
+import { LayoutDashboard, DollarSign,Wrench, Megaphone,Users, Sparkles, MessageCircle, BarChart4, Calendar1, Cog, Building2, Factory, TicketCheck, Phone, ListChecks, HelpCircle, BookOpenCheck, MessageSquareDashed, Scissors, ChevronRight } from 'lucide-react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useEffect, useRef, useState } from 'react'
 
-type Item = { icon?: any; label: string; href?: string; divider?: boolean }
+type Item = { icon?: any; label: string; href?: string; divider?: boolean; onClick?: () => void }
 type Group = { key: string; icon: any; label: string; items: Item[] }
 
 const groups: Group[] = [
@@ -20,27 +20,45 @@ const groups: Group[] = [
       { icon: Building2, label: 'Companies', href: '/clients' },
       { icon: Factory, label: 'Deals', href: '/developing' },
       { icon: TicketCheck, label: 'Tickets', href: '/messages' },
-      { icon: Factory, label: 'Orders', href: '/orders' },
       { divider: true, label: 'divider' },
-      { icon: ListChecks, label: 'Segments (Lists)', href: '/segments' },
-      { icon: MessageCircle, label: 'Inbox', href: '/messages' },
-      { icon: Phone, label: 'Calls', href: '/calls' },
-      { icon: ListChecks, label: 'Tasks', href: '/tasks' },
-      { icon: BookOpenCheck, label: 'Playbooks', href: '/playbooks' },
-      { icon: MessageSquareDashed, label: 'Message Templates', href: '/templates' },
-      { icon: Scissors, label: 'Snippets', href: '/snippets' },
+      { icon: Factory, label: 'Orders', href: '/orders' },
+      
     ],
   },
-  { key: 'campaigns', icon: Megaphone, label: 'Campaigns', items: [
-    { label: 'All Campaigns', href: '/campaigns' },
-    { label: 'Create Campaign', href: '/campaigns/new' },
-  ] },
+  {
+    key:'tool',
+    icon: Scissors,
+    label: 'Tools',
+    items:[
+    { icon: ListChecks, label: 'Segments (Lists)', href: '/segments' },
+    { icon: MessageCircle, label: 'Inbox', href: '/messages' },
+    { icon: Phone, label: 'Calls', href: '/calls' },
+    { icon: ListChecks, label: 'Tasks', href: '/tasks' },
+    { icon: BookOpenCheck, label: 'Playbooks', href: '/playbooks' },
+    { icon: MessageSquareDashed, label: 'Message Templates', href: '/templates' },]
+  },
+  {
+    key: 'campaigns', icon: Megaphone, label: 'Campaigns', items: [
+      { label: 'All Campaigns', href: '/campaigns' },
+      { label: 'Create Campaign', href: '/campaigns/new' },
+    ]
+  },
   { key: 'analytics', icon: BarChart4, label: 'Analytics', items: [{ label: 'Overview', href: '/analytics' }] },
   { key: 'integrations', icon: Wrench, label: 'Integrations', items: [{ label: 'Manage', href: '/integrations' }] },
-  { key: 'settings', icon: Cog, label: 'Settings', items: [{ label: 'Settings', href: '/settings' },{ label: 'Profile', href: '/profile' }] },
+  { key: 'settings', icon: Cog, label: 'Settings', items: [{ label: 'Settings', href: '/settings' }, { label: 'Profile', href: '/profile' }] },
   { key: 'calendar', icon: Calendar1, label: 'Calendar', items: [{ label: 'Calendar', href: '/calendar' },] },
   { key: 'pricing', icon: DollarSign, label: 'Pricing', items: [{ label: 'Pricing', href: '/pricing' }] },
-  { key: 'help', icon: HelpCircle, label: 'Help', items: [{ label: 'Help', href: '/developing' }] },
+  { key: 'help', icon: HelpCircle, label: 'Help', items: [{ label: 'Help', href: '/help' }] },
+  {
+    key: 'assistant',
+    icon: Sparkles,
+    label: 'Assistant',
+    items: [{
+      label: 'AI Assistant',
+      // Remove "href", use actual button for assistant and handle properly below.
+      onClick: undefined, // We'll handle this below for more robust behavior.
+    }]
+  },
 ]
 
 export default function Sidebar() {
@@ -83,6 +101,14 @@ export default function Sidebar() {
     window.addEventListener('toggle-sidebar', handler)
     return () => window.removeEventListener('toggle-sidebar', handler)
   }, [])
+
+  // Ensure we only call window.dispatchEvent for assistant if window is defined.
+  const handleAssistantToggle = () => {
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new Event('toggle-assistant'))
+      setActivePanel(null)
+    }
+  }
 
   return (
     <>
@@ -146,6 +172,20 @@ export default function Sidebar() {
                       {g.items.map((it, idx) =>
                         it.divider ? (
                           <li key={`div-${idx}`} className="my-2 h-px bg-white/10" />
+                        ) : g.key === 'assistant' ? (
+                          <li key={it.label}>
+                            <button
+                              className="flex items-center justify-between gap-3 w-full px-3 py-2 rounded-lg hover:bg-white/10 text-left"
+                              type="button"
+                              onClick={handleAssistantToggle}
+                            >
+                              <div className="flex items-center gap-3">
+                                <Sparkles size={16} className="text-white/80" />
+                                <span className="text-sm">{it.label}</span>
+                              </div>
+                              <ChevronRight size={16} className="text-white/40" />
+                            </button>
+                          </li>
                         ) : (
                           <li key={it.label}>
                             <Link

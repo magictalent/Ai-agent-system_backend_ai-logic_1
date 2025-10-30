@@ -4,6 +4,7 @@ import './globals.css'
 import { AuthProvider } from '@/contexts/AuthContext'
 import { Lexend_Deca } from 'next/font/google'
 import Head from 'next/head'
+import AiAssistantPanel from '@/components/AiAssistantPanel'
 // const inter = Inter({ subsets: ['latin'] })
 const lexendDeca = Lexend_Deca({
   subsets: ['latin'],
@@ -35,6 +36,8 @@ export default function RootLayout({
       <body className={lexendDeca.className}>
         <AuthProvider>
           {children}
+          {/* Global assistant panel */}
+          <AiAssistantPanel />
         </AuthProvider>
       </body>
     </html>
