@@ -239,6 +239,18 @@ export class CampaignsService {
       } catch {}
     }
 
+    // Map client industry for display
+    const clientIndustry: Record<string, string> = {};
+    if (clientIds.length) {
+      try {
+        const { data: clients } = await this.supabase
+          .from('clients')
+          .select('id,industry')
+          .in('id', clientIds);
+        for (const c of (clients || []) as any[]) clientIndustry[c.id] = c.industry || '';
+      } catch {}
+    }
+
     return safeRows.map((r: any) => {
       const counts = byCampaign[r.id] || { outbound: 0, inbound: 0 };
       const rr = counts.outbound > 0 ? Number(((counts.inbound / Math.max(1, counts.outbound)) * 100).toFixed(1)) : 0;
@@ -247,6 +259,7 @@ export class CampaignsService {
         leads_count: r.leads_count ?? eligibleLeads,
         response_rate: r.response_rate ?? rr,
         appointments_count: r.appointments_count ?? (meetingsByClient[r.client_id] || 0),
+        industry: clientIndustry[r.client_id] || null,
       };
     });
   }

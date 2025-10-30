@@ -12,6 +12,8 @@ export default function CampaignForm({
   inputClass,
   labelClass,
   buttonClass,
+  visibleSections,
+  hideSubmit,
 }: {
   mode: 'create' | 'edit'
   onSubmit: (data: CreateCampaignData, options?: { startNow?: boolean }) => Promise<void>
@@ -21,12 +23,16 @@ export default function CampaignForm({
   inputClass?: string
   labelClass?: string
   buttonClass?: string
+  visibleSections?: { basics?: boolean; industryTone?: boolean; channel?: boolean; startNow?: boolean }
+  hideSubmit?: boolean
 }) {
   const [form, setForm] = useState<CreateCampaignData>({
     name: initial?.name || '',
     description: initial?.description || '',
     channel: (initial?.channel || 'email') as any,
     tone: (initial?.tone || 'friendly') as any,
+    client_name: initial?.client_name || '',
+    industry: initial?.industry || '',
   })
   const [startNow, setStartNow] = useState(false)
   const [submitting, setSubmitting] = useState(false)
@@ -38,6 +44,8 @@ export default function CampaignForm({
       description: initial?.description || '',
       channel: (initial?.channel || 'email') as any,
       tone: (initial?.tone || 'friendly') as any,
+      client_name: initial?.client_name || '',
+      industry: initial?.industry || '',
       // client_id intentionally omitted from UI
     })
     setStartNow(false)
@@ -83,7 +91,8 @@ export default function CampaignForm({
       )}
 
       <form onSubmit={submit} className="space-y-5">
-        {/* Name */}
+        {/* Step: Basics (name + description) */}
+        {(visibleSections?.basics ?? true) && (
         <div>
           <label className={`${labelClass ?? baseLabel}`}>Campaign Name *</label>
           <input
@@ -95,8 +104,9 @@ export default function CampaignForm({
             className={`${inputClass ?? baseInput}`}
           />
         </div>
+        )}
 
-        {/* Description */}
+        {(visibleSections?.basics ?? true) && (
         <div>
           <label className={`${labelClass ?? baseLabel}`}>Description</label>
           <textarea
@@ -108,8 +118,36 @@ export default function CampaignForm({
             className={`${inputClass ?? baseInput}`}
           />
         </div>
+        )}
 
-        {/* Channel */}
+        {/* Step: Industry + client name */}
+        {(visibleSections?.industryTone ?? true) && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label className={`${labelClass ?? baseLabel}`}>Client Name (optional)</label>
+            <input
+              name="client_name"
+              value={form.client_name || ''}
+              onChange={update}
+              placeholder="e.g., Acme Inc."
+              className={`${inputClass ?? baseInput}`}
+            />
+          </div>
+          <div>
+            <label className={`${labelClass ?? baseLabel}`}>Industry</label>
+            <input
+              name="industry"
+              value={form.industry || ''}
+              onChange={update}
+              placeholder="e.g., SaaS, Logistics, Healthcare"
+              className={`${inputClass ?? baseInput}`}
+            />
+          </div>
+        </div>
+        )}
+
+        {/* Step: Channel */}
+        {(visibleSections?.channel ?? true) && (
         <div>
           <label className={`${labelClass ?? baseLabel}`}>Channel</label>
           <div className="grid grid-cols-2 gap-3">
@@ -127,8 +165,10 @@ export default function CampaignForm({
             ))}
           </div>
         </div>
+        )}
 
-        {/* Tone */}
+        {/* Step: Tone */}
+        {(visibleSections?.industryTone ?? true) && (
         <div>
           <label className={`${labelClass ?? baseLabel}`}>Tone</label>
           <div className="grid grid-cols-3 gap-2">
@@ -144,14 +184,16 @@ export default function CampaignForm({
             ))}
           </div>
         </div>
+        )}
 
-        {mode === 'create' && (
+        {(visibleSections?.startNow ?? true) && mode === 'create' && (
           <label className="flex items-center gap-2 text-sm text-gray-700">
             <input type="checkbox" className="h-4 w-4" checked={startNow} onChange={(e) => setStartNow(e.target.checked)} />
             Start campaign immediately after creation
           </label>
         )}
 
+        {!hideSubmit && (
         <div className="flex justify-end gap-2 pt-2">
           {onCancel && (
             <button type="button" onClick={onCancel} className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200">Cancel</button>
@@ -160,6 +202,7 @@ export default function CampaignForm({
             {submitting ? (mode === 'edit' ? 'Saving…' : 'Creating…') : (mode === 'edit' ? 'Save Changes' : 'Create Campaign')}
           </button>
         </div>
+        )}
       </form>
     </div>
   )

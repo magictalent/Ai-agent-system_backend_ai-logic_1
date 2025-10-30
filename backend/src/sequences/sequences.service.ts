@@ -345,7 +345,7 @@ export class SequencesService {
               lead_email: toEmail,
               lead_phone: lead?.phone || null,
               channel: 'email',
-              content: item.content || '',
+              content: aiText || item.content || '',
               status: 'sent',
               direction: 'outbound',
             });
@@ -420,5 +420,4 @@ export class SequencesService {
     return data || [];
   }
 }
-
 

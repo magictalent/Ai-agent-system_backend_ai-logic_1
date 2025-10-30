@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { Campaign } from '@/types/campaign'
 // import { useAuth } from '@/contexts/AuthContext'
 
@@ -83,6 +83,7 @@ function CampaignDetails({
         </span>
         <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-blue-50 text-blue-800">Channel: {campaign.channel || 'email'}</span>
         <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-purple-50 text-purple-800">Tone: {(campaign as any).tone || 'friendly'}</span>
+        <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-teal-50 text-teal-800">Industry: {(campaign as any).industry || '—'}</span>
         <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-pink-50 text-pink-800">Leads: {campaign.leads_count ?? 0}</span>
         <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-green-50 text-green-800">Response: {(campaign as any).response_rate ?? 0}%</span>
         <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-amber-50 text-amber-800">Appointments: {(campaign as any).appointments_count ?? 0}</span>
@@ -159,6 +160,7 @@ export default function CampaignsPage() {
   const [selectedCampaignId, setSelectedCampaignId] = useState<string | null>(null)
   const [loadingActionId, setLoadingActionId] = useState<string | null>(null)
   const { user, token } = useAuth()
+  const search = useSearchParams()
   const router = useRouter()
 
   const fetchData = async () => {
@@ -280,6 +282,11 @@ export default function CampaignsPage() {
   })
 
   useEffect(() => { if (user && token) fetchData() }, [user, token])
+  // If redirected with ?open=ID, select it when data loads
+  useEffect(() => {
+    const openId = search?.get('open')
+    if (openId && campaigns.find(c => c.id === openId)) setSelectedCampaignId(openId)
+  }, [search, campaigns])
 
   if (!user) {
     return (

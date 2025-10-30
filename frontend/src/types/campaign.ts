@@ -21,6 +21,9 @@ export interface Campaign {
 export interface CreateCampaignData {
   // Optional on UI: backend may infer default client
   client_id?: string
+  // Optional helpers for UI-driven client creation
+  client_name?: string
+  industry?: string
   name: string
   description?: string
   channel: 'whatsapp' | 'email' | 'sms' | 'multi'
