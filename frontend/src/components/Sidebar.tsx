@@ -18,7 +18,7 @@ const groups: Group[] = [
     items: [
       { icon: Users, label: 'Contacts', href: '/leads' },
       { icon: Building2, label: 'Companies', href: '/clients' },
-      { icon: Factory, label: 'Deals', href: '/campaigns' },
+      { icon: Factory, label: 'Deals', href: '/developing' },
       { icon: TicketCheck, label: 'Tickets', href: '/messages' },
       { icon: Factory, label: 'Orders', href: '/orders' },
       { divider: true, label: 'divider' },
@@ -33,12 +33,12 @@ const groups: Group[] = [
   },
   { key: 'campaigns', icon: Megaphone, label: 'Campaigns', items: [
     { label: 'All Campaigns', href: '/campaigns' },
-    { label: 'Create Campaign', href: '/campaigns?new=1' },
+    { label: 'Create Campaign', href: '/campaigns/new' },
   ] },
   { key: 'analytics', icon: BarChart4, label: 'Analytics', items: [{ label: 'Overview', href: '/analytics' }] },
   { key: 'integrations', icon: Wrench, label: 'Integrations', items: [{ label: 'Manage', href: '/integrations' }] },
-  { key: 'settings', icon: Cog, label: 'Settings', items: [{ label: 'Profile', href: '/developing' }] },
-  { key: 'calendar', icon: Calendar1, label: 'Calendar1', items: [{ label: 'Calendar', href: '/calendar' }] },
+  { key: 'settings', icon: Cog, label: 'Settings', items: [{ label: 'Settings', href: '/settings' },{ label: 'Profile', href: '/profile' }] },
+  { key: 'calendar', icon: Calendar1, label: 'Calendar', items: [{ label: 'Calendar', href: '/calendar' },] },
   { key: 'pricing', icon: DollarSign, label: 'Pricing', items: [{ label: 'Pricing', href: '/pricing' }] },
   { key: 'help', icon: HelpCircle, label: 'Help', items: [{ label: 'Help', href: '/developing' }] },
 ]

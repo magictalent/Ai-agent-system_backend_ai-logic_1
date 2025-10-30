@@ -388,9 +388,9 @@ export default function CampaignsPage() {
                   ))}
                 </ul>
               )}
-              <div className="px-4 py-4 border-t bg-white">
+              {/* <div className="px-4 py-4 border-t bg-white">
                 <button onClick={() => router.push('/campaigns/new')} className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded transition-colors flex items-center justify-center"><img src="/icons/plus.png" alt="New" className="w-5 h-5 mr-2" /> New Campaign</button>
-              </div>
+              </div> */}
             </div>
           </aside>
           {/* Mobile Sidebar dropdown */}
