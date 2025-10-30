@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useState, useMemo } from "react";
+import { API_BASE } from "@/lib/api";
 import { useAuth } from "@/contexts/AuthContext";
 import { useRouter } from "next/navigation";
 import { StatCard } from "@/components/StatCard";
@@ -93,9 +94,9 @@ function DashboardPage() {
     setLoading(true);
     setError(null);
     Promise.all([
-      fetch("http://localhost:3001/dashboard/summary", { headers: { Authorization: `Bearer ${token}` } }),
-      fetch("http://localhost:3001/dashboard/timeseries?period=7d", { headers: { Authorization: `Bearer ${token}` } }),
-      fetch("http://localhost:3001/dashboard/recent-leads?limit=6", { headers: { Authorization: `Bearer ${token}` } }),
+      fetch(`${API_BASE}/dashboard/summary`, { headers: { Authorization: `Bearer ${token}` } }),
+      fetch(`${API_BASE}/dashboard/timeseries?period=7d`, { headers: { Authorization: `Bearer ${token}` } }),
+      fetch(`${API_BASE}/dashboard/recent-leads?limit=6`, { headers: { Authorization: `Bearer ${token}` } }),
     ])
       .then(async ([sumRes, tsRes, recRes]) => {
         if (!sumRes.ok) throw new Error(await sumRes.text());
@@ -127,7 +128,7 @@ function DashboardPage() {
 
   useEffect(() => {
     if (!token) return;
-    fetch("http://localhost:3001/dashboard/sequence-window", { headers: { Authorization: `Bearer ${token}` } })
+    fetch(`${API_BASE}/dashboard/sequence-window`, { headers: { Authorization: `Bearer ${token}` } })
       .then(async (res) => (res.ok ? (await res.json() as SequenceWindowData) : {} as SequenceWindowData))
       .then((data: SequenceWindowData) =>
         setNextSends({ last24: data?.sent_last_24h ?? 0, next24: data?.scheduled_next_24h ?? 0 })
@@ -137,7 +138,7 @@ function DashboardPage() {
   // Fetch reply rates + errors tile
   useEffect(() => {
     if (!token) return;
-    fetch("http://localhost:3001/dashboard/replies-errors", { headers: { Authorization: `Bearer ${token}` } })
+    fetch(`${API_BASE}/dashboard/replies-errors`, { headers: { Authorization: `Bearer ${token}` } })
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
         if (!data) return;
@@ -710,6 +711,8 @@ function BarsGradient({
     </div>
   );
 }
+
+
 
 
 

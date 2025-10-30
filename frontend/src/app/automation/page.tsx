@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useAuth } from "@/contexts/AuthContext";
+import { useAuth } from "@/contexts/AuthContext";\nimport { API_BASE } from "@/lib/api";
 
 export default function AutomationPage() {
   const { token } = useAuth();
@@ -12,7 +12,7 @@ export default function AutomationPage() {
     if (!token) { setStatus("Missing session"); return; }
     setLoading(true); setStatus("");
     try {
-      const res = await fetch("http://localhost:3001/automation/run", {
+      const res = await fetch(`${API_BASE}/automation/run`, {
         method: "POST",
         headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
       });
@@ -50,3 +50,6 @@ export default function AutomationPage() {
     </div>
   );
 }
+
+
+

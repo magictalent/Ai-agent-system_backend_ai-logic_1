@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { X, Send, Maximize2, Minimize2, Sparkles } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
+import { API_BASE } from '@/lib/api'
 
 type ChatMsg = { role: 'user' | 'assistant'; text: string }
 
@@ -44,7 +45,7 @@ export default function AiAssistantPanel() {
     setInput('')
     setBusy(true)
     try {
-      const res = await fetch('http://localhost:3001/ai/assistant', {
+      const res = await fetch(`${API_BASE}/ai/assistant`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
         body: JSON.stringify({ prompt, context: { route: typeof window !== 'undefined' ? window.location.pathname : '' } })
@@ -122,4 +123,3 @@ export default function AiAssistantPanel() {
     </div>
   )
 }
-

@@ -1,3 +1,4 @@
+import { API_BASE } from '@/lib/api';
 'use client'
 
 import { useEffect, useState } from 'react'
@@ -18,7 +19,7 @@ export default function OnboardingPage() {
     setCheckingEmail(true)
     setEmailStatus('')
     try {
-      const res = await fetch('http://localhost:3001/email/verify')
+      const res = await fetch(`${API_BASE}/email/verify`)
       const data = await res.json()
       if (data.ok) setEmailStatus('SMTP configured and reachable')
       else setEmailStatus(data.message || 'SMTP not configured')
@@ -37,7 +38,7 @@ export default function OnboardingPage() {
     setStarting(true)
     setAutomationMsg('')
     try {
-      const res = await fetch('http://localhost:3001/automation/run', {
+      const res = await fetch(${API_BASE}/automation/run', {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${token}` },
       })
@@ -68,7 +69,7 @@ export default function OnboardingPage() {
         <div className="text-lg font-semibold">1) Connect Google Calendar</div>
         <div className="text-sm text-gray-600">Authorize access so the AI can book meetings on your behalf.</div>
         <a
-          href={`http://localhost:3001/google/auth/login?clientId=shared&returnUrl=${encodeURIComponent('http://localhost:3000/onboarding?calendar=connected')}`}
+          href={`${API_BASE}/google/auth/login?clientId=shared&returnUrl=${encodeURIComponent('http://localhost:3000/onboarding?calendar=connected')}`}
           className="inline-block px-4 py-2 rounded-lg text-white bg-red-600 hover:bg-red-700"
         >
           Connect Google Calendar
@@ -130,4 +131,7 @@ export default function OnboardingPage() {
     </div>
   )
 }
+
+
+
 

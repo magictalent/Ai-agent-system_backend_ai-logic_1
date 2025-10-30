@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { useAuth } from "@/contexts/AuthContext";
+import { useAuth } from "@/contexts/AuthContext";\nimport { API_BASE } from "@/lib/api";
 import { useRouter, useSearchParams } from "next/navigation";
 
 type SeriesRow = { date: string; leads: number; outbound: number; inbound: number; appointments: number };
@@ -30,7 +30,7 @@ export default function AnalyticsPageContent() {
       try {
         setLoading(true);
         setError("");
-        const base = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
+        const base = API_BASE;
         const headers = { Authorization: `Bearer ${token}` };
 
         const [tsRes, agRes] = await Promise.all([
@@ -249,3 +249,5 @@ function TableCard({
     </div>
   );
 }
+
+

@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
+import { API_BASE } from '@/lib/api'
 
 interface AiActivity {
   id: string
@@ -44,7 +45,7 @@ export default function AiDashboard() {
       
       console.log('🔍 Fetching AI dashboard...')
       
-      const response = await fetch('http://localhost:3001/campaigns/ai-dashboard', {
+      const response = await fetch(`${API_BASE}/campaigns/ai-dashboard`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
@@ -107,7 +108,7 @@ export default function AiDashboard() {
           <button
             onClick={async () => {
               try {
-                const response = await fetch('http://localhost:3001/campaigns', {
+                const response = await fetch(`${API_BASE}/campaigns`, {
                   headers: {
                     'Authorization': `Bearer ${token}`,
                     'Content-Type': 'application/json',

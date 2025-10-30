@@ -1,3 +1,4 @@
+import { API_BASE } from '@/lib/api';
 'use client'
 
 import { useEffect, useState } from 'react'
@@ -30,7 +31,7 @@ export default function IntegrationsPage() {
 
   const fetchStatus = async () => {
     try {
-      const res = await fetch('http://localhost:3001/crm/status')
+      const res = await fetch(${API_BASE}/crm/status')
       if (res.ok) {
         const data = await res.json()
         setStatus(data)
@@ -44,7 +45,7 @@ export default function IntegrationsPage() {
     const fetchHubspot = async () => {
       if (!token) return
       try {
-        const res = await fetch('http://localhost:3001/hubspot/auth/status', {
+        const res = await fetch(${API_BASE}/hubspot/auth/status', {
           headers: { Authorization: `Bearer ${token}` },
         })
         if (res.ok) {
@@ -76,7 +77,7 @@ export default function IntegrationsPage() {
     try {
       const headers: HeadersInit = token ? { Authorization: `Bearer ${token}` } : {}
       const res = await fetch(
-        `http://localhost:3001/crm/test?provider=${encodeURIComponent(provider)}`,
+        `${API_BASE}/crm/test?provider=${encodeURIComponent(provider)}`,
         { headers }
       )
       const data = await res.json()
@@ -98,7 +99,7 @@ export default function IntegrationsPage() {
     setConnecting(true)
     try {
       const returnUrl = typeof window !== 'undefined' ? `${window.location.origin}/integrations` : 'http://localhost:3000/integrations'
-      const url = `http://localhost:3001/hubspot/auth/login?token=${encodeURIComponent(t)}&returnUrl=${encodeURIComponent(returnUrl)}`
+      const url = `${API_BASE}/hubspot/auth/login?token=${encodeURIComponent(t)}&returnUrl=${encodeURIComponent(returnUrl)}`
       window.location.href = url
     } catch (e: any) {
       setMessage(e.message)
@@ -110,7 +111,7 @@ export default function IntegrationsPage() {
     const t = authToken ?? token
     if (!t) { setMessage('Please log in first'); return }
     try {
-      await fetch('http://localhost:3001/hubspot/auth/disconnect', {
+      await fetch(${API_BASE}/hubspot/auth/disconnect', {
         headers: { Authorization: `Bearer ${t}` },
       })
       await startHubspotConnect(t)
@@ -137,7 +138,7 @@ export default function IntegrationsPage() {
         includeSamples: '1',
       }).toString()
       const res = await fetch(
-        `http://localhost:3001/crm/leads?${qs}`,
+        `${API_BASE}/crm/leads?${qs}`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -173,7 +174,7 @@ export default function IntegrationsPage() {
         includeSamples: '1',
       }).toString()
       const res = await fetch(
-        `http://localhost:3001/crm/import?${qs}`,
+        `${API_BASE}/crm/import?${qs}`,
         {
           method: 'POST',
           headers: {
@@ -316,7 +317,7 @@ export default function IntegrationsPage() {
         </div>
         <div className="flex gap-3 flex-wrap items-center">
           <a
-            href={`http://localhost:3001/google/auth/login?clientId=shared&returnUrl=${encodeURIComponent(
+            href={`${API_BASE}/google/auth/login?clientId=shared&returnUrl=${encodeURIComponent(
               'http://localhost:3000/integrations'
             )}`}
             className="px-4 py-2 rounded-lg text-white bg-red-600 hover:bg-red-700"
@@ -331,3 +332,6 @@ export default function IntegrationsPage() {
     </div>
   )
 }
+
+
+

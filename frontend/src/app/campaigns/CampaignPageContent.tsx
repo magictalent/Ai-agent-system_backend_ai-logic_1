@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
+import { API_BASE } from "@/lib/api";
 import { Campaign } from "@/types/campaign";
 import { FaChevronRight, FaUserCircle } from "react-icons/fa";
 
@@ -36,7 +37,7 @@ function CampaignDetails({
         try {
           setProgressLoading(true)
           // Load up to 50 queued items to estimate pending/cancelled/failed
-          const qRes = await fetch('http://localhost:3001/sequences/queue', {
+          const qRes = await fetch(`${API_BASE}/sequences/queue`, {
             method: 'POST', headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
             body: JSON.stringify({ campaignId: campaign.id, limit: 50 })
           })
@@ -46,7 +47,7 @@ function CampaignDetails({
           const failed = Array.isArray(queue) ? queue.filter((i:any)=>i.status==='failed').length : 0
           const nextDue = Array.isArray(queue) && queue.length ? queue.find((i:any)=>i.status==='pending')?.due_at : undefined
           // Load sent messages to compute sent count
-          const mRes = await fetch(`http://localhost:3001/messages/campaign/${campaign.id}`, { headers: { 'Authorization': `Bearer ${token}` } })
+          const mRes = await fetch(`${API_BASE}/messages/campaign/${campaign.id}`, { headers: { 'Authorization': `Bearer ${token}` } })
           const msgs = mRes.ok ? await mRes.json() : []
           const sent = Array.isArray(msgs) ? msgs.filter((m:any)=>m.direction==='outbound' && m.status==='sent').length : 0
           setProgress({ pending, sent, failed, cancelled, nextDue })
@@ -165,7 +166,7 @@ export default function CampaignsPageContent() {
         setLoading(true)
         setError('')
         if (!token) { setError('Missing user token. Please re-login.'); setLoading(false); return }
-        const camps = await fetch('http://localhost:3001/campaigns', { headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' } })
+      const camps = await fetch(`${API_BASE}/campaigns`, { headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' } })
         if (!camps.ok) throw new Error(await camps.text())
         const json = await camps.json()
         setCampaigns(json)
@@ -181,13 +182,13 @@ export default function CampaignsPageContent() {
     const handleStartCampaign = async (campaignId: string) => {
       setLoadingActionId(campaignId)
       try {
-        const response = await fetch(`http://localhost:3001/campaigns/${campaignId}/start`, { method: 'POST', headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' } })
+      const response = await fetch(`${API_BASE}/campaigns/${campaignId}/start`, { method: 'POST', headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' } })
         if (!response.ok) throw new Error('Failed to start campaign')
         setCampaigns(prev => prev.map(c => c.id === campaignId ? { ...c, status: 'active' as const } : c))
         const camp = campaigns.find(c => c.id === campaignId)
         if (camp) {
           try {
-            const bulk = await fetch('http://localhost:3001/sequences/start-all', {
+          const bulk = await fetch(`${API_BASE}/sequences/start-all`, {
               method: 'POST',
               headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
               body: JSON.stringify({ clientId: camp.client_id, campaignId: camp.id, channel: 'email', tone: (camp as any).tone || 'friendly' })
@@ -207,7 +208,7 @@ export default function CampaignsPageContent() {
     const handlePauseCampaign = async (campaignId: string) => {
       setLoadingActionId(campaignId)
       try {
-        const res = await fetch(`http://localhost:3001/campaigns/${campaignId}/pause`, { method: 'POST', headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' } })
+      const res = await fetch(`${API_BASE}/campaigns/${campaignId}/pause`, { method: 'POST', headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' } })
         if (!res.ok) throw new Error('Failed to pause campaign')
         setCampaigns(prev => prev.map(c => c.id === campaignId ? { ...c, status: 'paused' as const } : c))
       } catch (e: any) {
@@ -219,7 +220,7 @@ export default function CampaignsPageContent() {
     const handleBroadcast = async (camp: Campaign) => {
       try {
         setLoadingActionId(camp.id)
-        const bulk = await fetch('http://localhost:3001/sequences/start-all', {
+      const bulk = await fetch(`${API_BASE}/sequences/start-all`, {
           method: 'POST',
           headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
           body: JSON.stringify({ clientId: camp.client_id, campaignId: camp.id, channel: 'email', tone: (camp as any).tone || 'friendly' })
@@ -228,7 +229,7 @@ export default function CampaignsPageContent() {
         if (!bulk.ok) throw new Error(data?.message || 'Failed to enqueue sequences')
         // Bubble the result to detail instead of page banner
         setCampaigns(prev => prev.map(c => c.id === camp.id ? { ...c, leads_count: (c.leads_count ?? 0) + (data.enqueued ?? 0) } : c))
-        try { await fetch('http://localhost:3001/sequences/tick?force=1', { method: 'POST', headers: { 'Authorization': `Bearer ${token}` } }) } catch {}
+      try { await fetch(`${API_BASE}/sequences/tick?force=1`, { method: 'POST', headers: { 'Authorization': `Bearer ${token}` } }) } catch {}
       } catch (e:any) {
         setError(e?.message || 'Broadcast failed')
       } finally {
@@ -238,7 +239,7 @@ export default function CampaignsPageContent() {
     const handleStopCampaign = async (campaignId: string) => {
       setLoadingActionId(campaignId)
       try {
-        const res = await fetch(`http://localhost:3001/campaigns/${campaignId}/stop`, { method: 'POST', headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' } })
+      const res = await fetch(`${API_BASE}/campaigns/${campaignId}/stop`, { method: 'POST', headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' } })
         if (!res.ok) throw new Error('Failed to stop campaign')
         setCampaigns(prev => prev.map(c => c.id === campaignId ? { ...c, status: 'completed' as const } : c))
       } catch (e: any) {
@@ -251,7 +252,7 @@ export default function CampaignsPageContent() {
       if (!confirm('Delete this campaign? This cannot be undone.')) return;
       setLoadingActionId(campaignId)
       try {
-        const res = await fetch(`http://localhost:3001/campaigns/${campaignId}`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' } })
+      const res = await fetch(`${API_BASE}/campaigns/${campaignId}`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' } })
         if (!res.ok) throw new Error((await res.text()) || 'Failed to delete campaign')
         setCampaigns(prev => prev.filter(c => c.id !== campaignId))
         // If deleted campaign is selected, select another

@@ -1,3 +1,4 @@
+import { API_BASE } from '@/lib/api';
 'use client'
 
 import { useState, useEffect } from 'react'
@@ -31,7 +32,7 @@ export default function ClientsPage() {
   const fetchClients = async () => {
     try {
       setLoading(true)
-      const response = await fetch('http://localhost:3001/clients', {
+      const response = await fetch(`${API_BASE}/clients`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
@@ -54,7 +55,7 @@ export default function ClientsPage() {
   // Create new client
   const handleCreateClient = async (clientData: CreateClientData) => {
     try {
-      const response = await fetch('http://localhost:3001/clients/add', {
+      const response = await fetch(`${API_BASE}/clients/add`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -80,7 +81,7 @@ export default function ClientsPage() {
     if (!confirm('Are you sure you want to delete this client?')) return
 
     try {
-      const response = await fetch(`http://localhost:3001/clients/${clientId}`, {
+      const response = await fetch(`${API_BASE}/clients/${clientId}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`,

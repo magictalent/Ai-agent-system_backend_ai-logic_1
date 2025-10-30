@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { Campaign, CHANNEL_CONFIGS, STATUS_CONFIGS } from '@/types/campaign'
 import { useAuth } from '@/contexts/AuthContext'
+import { API_BASE } from '@/lib/api'
 
 interface CampaignCardProps {
   campaign: Campaign
@@ -128,14 +129,14 @@ export default function CampaignCard({ campaign, onEdit, onStart, onPause, onSto
               if (!token) { setSeqMsg('Please log in'); return }
               try {
                 setBulkStarting(true)
-                const res = await fetch('http://localhost:3001/sequences/start-all', {
+                const res = await fetch(`${API_BASE}/sequences/start-all`, {
                   method: 'POST', headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
                   body: JSON.stringify({ clientId: campaign.client_id, campaignId: campaign.id, channel: 'email', tone: (campaign as any).tone || 'friendly' })
                 })
                 const data = await res.json()
                 if (!res.ok) throw new Error(data?.message || 'Failed to enqueue sequences')
                 setSeqMsg(`Enqueued ${data.enqueued} leads (${data.steps_created} steps) for '${campaign.name}'. Sending first emails…`)
-                try { await fetch('http://localhost:3001/sequences/tick', { method: 'POST', headers: { 'Authorization': `Bearer ${token}` } }) } catch {}
+                try { await fetch(`${API_BASE}/sequences/tick?force=1`, { method: 'POST', headers: { 'Authorization': `Bearer ${token}` } }) } catch {}
                 if (!showSequence) setShowSequence(true)
                 await loadQueue()
               } catch (e:any) { setSeqMsg(e.message) } finally { setBulkStarting(false) }
@@ -164,7 +165,7 @@ export default function CampaignCard({ campaign, onEdit, onStart, onPause, onSto
                 if (!leadEmail) { setSeqMsg('Enter a lead email'); return }
                 try {
                   setStarting(true)
-                  const res = await fetch('http://localhost:3001/sequences/start', {
+                  const res = await fetch(`${API_BASE}/sequences/start`, {
                     method: 'POST', headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
                     body: JSON.stringify({ clientId: campaign.client_id, campaignId: campaign.id, leadEmail, channel: 'email' })
                   })
@@ -187,7 +188,7 @@ export default function CampaignCard({ campaign, onEdit, onStart, onPause, onSto
                 onClick={async () => {
                   if (!token) { setSeqMsg('Please log in'); return }
                   try {
-                    const res = await fetch('http://localhost:3001/sequences/tick', { method: 'POST', headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' } })
+                    const res = await fetch(`${API_BASE}/sequences/tick?force=1`, { method: 'POST', headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' } })
                     const data = await res.json()
                     setSeqMsg(`Tick processed ${data.processed} items`)
                     await loadQueue()
@@ -229,7 +230,7 @@ function Metric({ label, icon, value }: { label: string; icon: string; value: an
 }
 
 async function loadQueueInternal(campaignId: string, token: string) {
-  const res = await fetch('http://localhost:3001/sequences/queue', {
+  const res = await fetch(`${API_BASE}/sequences/queue`, {
     method: 'POST', headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
     body: JSON.stringify({ campaignId, limit: 5 })
   })

@@ -6,11 +6,15 @@ import { AppModule } from './app.module';
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
-  // Enable CORS for frontend
-  app.enableCors({
-    origin: ['http://localhost:3000', 'http://localhost:3001'],
-    credentials: true,
-  });
+  // Enable CORS for frontend (local + deployed)
+  const envOrigins = (process.env.FRONTEND_ORIGINS || '').split(',').map(s => s.trim()).filter(Boolean);
+  const defaultOrigins = [
+    'http://localhost:3000',
+    'http://localhost:3001',
+    'https://sellient.netlify.app',
+  ];
+  const origins = envOrigins.length ? envOrigins : defaultOrigins;
+  app.enableCors({ origin: origins, credentials: true });
 
   // Global validation
   app.useGlobalPipes(new ValidationPipe({

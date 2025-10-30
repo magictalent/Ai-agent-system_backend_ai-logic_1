@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import Image from 'next/image'
 import { CreateClientData, CRMProvider } from '@/types/client'
+import { API_BASE } from '@/lib/api'
 
 interface AddClientModalProps {
   isOpen: boolean
@@ -64,7 +65,7 @@ export default function AddClientModal({ isOpen, onClose, onSubmit }: AddClientM
   useEffect(() => {
     const fetchStatus = async () => {
       try {
-        const res = await fetch('http://localhost:3001/crm/status')
+        const res = await fetch(`${API_BASE}/crm/status`)
         if (res.ok) {
           const status = await res.json()
           setProviders(prev => prev.map(p => ({

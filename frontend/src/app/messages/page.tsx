@@ -1,3 +1,4 @@
+import { API_BASE } from '@/lib/api';
 'use client'
 
 import { useState, useEffect } from 'react'
@@ -20,7 +21,7 @@ export default function MessagesPage() {
     try {
       setLoading(true)
       setError('')
-      const response = await fetch('http://localhost:3001/messages/conversations', {
+      const response = await fetch(`${API_BASE}/messages/conversations`, {
         headers: {
           Authorization: `Bearer ${token}`,
           'Content-Type': 'application/json',
@@ -224,3 +225,4 @@ export default function MessagesPage() {
     </div>
   )
 }
+

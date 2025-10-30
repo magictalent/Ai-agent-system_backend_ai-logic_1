@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
 import { Campaign, CreateCampaignData } from "@/types/campaign";
+import { API_BASE } from "@/lib/api";
 import CampaignForm from "@/components/CampaignForm";
 import CampaignCard from "@/components/CampaignCard";
 import { FaChevronRight, FaUserCircle } from "react-icons/fa";
@@ -34,7 +35,7 @@ export default function CampaignsCreatePageContent() {
         setLoading(false);
         return;
       }
-      const res = await fetch("http://localhost:3001/campaigns", {
+      const res = await fetch(`${API_BASE}/campaigns`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (!res.ok) throw new Error(await res.text());
@@ -67,7 +68,7 @@ export default function CampaignsCreatePageContent() {
           industry: data.industry || '',
           crm_provider: 'mock',
         } as any;
-        const add = await fetch('http://localhost:3001/clients/add', {
+        const add = await fetch(`${API_BASE}/clients/add`, {
           method: 'POST',
           headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
           body: JSON.stringify(clientBody)
@@ -85,7 +86,7 @@ export default function CampaignsCreatePageContent() {
         client_id: clientId,
       };
       if (!payload.client_id) delete payload.client_id;
-      const res = await fetch("http://localhost:3001/campaigns/add", {
+      const res = await fetch(`${API_BASE}/campaigns/add`, {
         method: "POST",
         headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
         body: JSON.stringify(payload),
@@ -108,7 +109,7 @@ export default function CampaignsCreatePageContent() {
     try {
       const payload: any = { ...patch };
       if (!payload.client_id) delete payload.client_id;
-      const res = await fetch(`http://localhost:3001/campaigns/${editing.id}`, {
+      const res = await fetch(`${API_BASE}/campaigns/${editing.id}`, {
         method: "PUT",
         headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
         body: JSON.stringify(payload),
@@ -126,7 +127,7 @@ export default function CampaignsCreatePageContent() {
   // Action helpers
   const handleStart = async (campaignId: string) => {
     try {
-      const res = await fetch(`http://localhost:3001/campaigns/${campaignId}/start`, {
+      const res = await fetch(`${API_BASE}/campaigns/${campaignId}/start`, {
         method: 'POST', headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }
       })
       if (!res.ok) throw new Error('Failed to start campaign')
@@ -135,7 +136,7 @@ export default function CampaignsCreatePageContent() {
       const camp = campaigns.find(c => c.id === campaignId)
       if (camp) {
         try {
-          await fetch('http://localhost:3001/sequences/start-all', {
+          await fetch(`${API_BASE}/sequences/start-all`, {
             method: 'POST',
             headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
             body: JSON.stringify({ clientId: camp.client_id, campaignId: camp.id, channel: 'email', tone: (camp as any).tone || 'friendly' })
@@ -145,13 +146,13 @@ export default function CampaignsCreatePageContent() {
     } catch (e: any) { setError(e?.message || 'Failed to start') }
   }
   const handlePause = async (campaignId: string) => {
-    try { const res = await fetch(`http://localhost:3001/campaigns/${campaignId}/pause`, { method: 'POST', headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' } }); if (!res.ok) throw new Error('Failed to pause campaign'); setCampaigns(prev => prev.map(c => c.id === campaignId ? { ...c, status: 'paused' as const } : c)) } catch (e: any) { setError(e?.message || 'Failed to pause') }
+    try { const res = await fetch(`${API_BASE}/campaigns/${campaignId}/pause`, { method: 'POST', headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' } }); if (!res.ok) throw new Error('Failed to pause campaign'); setCampaigns(prev => prev.map(c => c.id === campaignId ? { ...c, status: 'paused' as const } : c)) } catch (e: any) { setError(e?.message || 'Failed to pause') }
   }
   const handleStop = async (campaignId: string) => {
-    try { const res = await fetch(`http://localhost:3001/campaigns/${campaignId}/stop`, { method: 'POST', headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' } }); if (!res.ok) throw new Error('Failed to stop campaign'); setCampaigns(prev => prev.map(c => c.id === campaignId ? { ...c, status: 'completed' as const } : c)) } catch (e: any) { setError(e?.message || 'Failed to stop') }
+    try { const res = await fetch(`${API_BASE}/campaigns/${campaignId}/stop`, { method: 'POST', headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' } }); if (!res.ok) throw new Error('Failed to stop campaign'); setCampaigns(prev => prev.map(c => c.id === campaignId ? { ...c, status: 'completed' as const } : c)) } catch (e: any) { setError(e?.message || 'Failed to stop') }
   }
   const handleDelete = async (campaignId: string) => {
-    try { if (!confirm('Delete this campaign?')) return; const res = await fetch(`http://localhost:3001/campaigns/${campaignId}`, { method: 'DELETE', headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' } }); if (!res.ok) throw new Error(await res.text()); setCampaigns(prev => prev.filter(c => c.id !== campaignId)) } catch (e: any) { setError(e?.message || 'Failed to delete') }
+    try { if (!confirm('Delete this campaign?')) return; const res = await fetch(`${API_BASE}/campaigns/${campaignId}`, { method: 'DELETE', headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' } }); if (!res.ok) throw new Error(await res.text()); setCampaigns(prev => prev.filter(c => c.id !== campaignId)) } catch (e: any) { setError(e?.message || 'Failed to delete') }
   }
 
   if (!user)
@@ -302,4 +303,6 @@ export default function CampaignsCreatePageContent() {
     </div>
   );
 }
+
+
 
