@@ -17,7 +17,8 @@ export class CampaignsController {
   @Get()
   async getAllCampaigns(@Request() req) {
     const userId = req.user.id;
-    return await this.campaignsService.getAllCampaigns(userId);
+    const raw = await this.campaignsService.getAllCampaigns(userId);
+    return await this.campaignsService.enrichCampaigns(raw as any[], userId);
   }
 
   @Get('ai-dashboard')

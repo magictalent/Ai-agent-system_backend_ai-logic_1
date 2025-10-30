@@ -118,10 +118,31 @@ export default function CampaignCard({ campaign, onEdit, onStart, onPause, onSto
         <Metric label="Response" icon="/icons/sms.png" value={`${campaign.response_rate}%`} />
       </div>
 
-      {/* Footer actions - refreshed styling */}
+      {/* Footer actions - refined layout */}
       <div className="mt-2 pt-4 border-t flex items-center justify-between">
         <div className="flex items-center gap-2">
           <ActionPrimary />
+          <button
+            onClick={async () => {
+              setSeqMsg('')
+              if (!token) { setSeqMsg('Please log in'); return }
+              try {
+                setBulkStarting(true)
+                const res = await fetch('http://localhost:3001/sequences/start-all', {
+                  method: 'POST', headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ clientId: campaign.client_id, campaignId: campaign.id, channel: 'email', tone: (campaign as any).tone || 'friendly' })
+                })
+                const data = await res.json()
+                if (!res.ok) throw new Error(data?.message || 'Failed to enqueue sequences')
+                setSeqMsg(`Enqueued ${data.enqueued} leads (${data.steps_created} steps) for '${campaign.name}'. Sending first emails…`)
+                try { await fetch('http://localhost:3001/sequences/tick', { method: 'POST', headers: { 'Authorization': `Bearer ${token}` } }) } catch {}
+                if (!showSequence) setShowSequence(true)
+                await loadQueue()
+              } catch (e:any) { setSeqMsg(e.message) } finally { setBulkStarting(false) }
+            }}
+            disabled={bulkStarting}
+            className="px-3 py-1.5 rounded-md text-sm bg-indigo-600 text-white hover:bg-indigo-700 disabled:opacity-50"
+          >{bulkStarting ? 'Broadcasting…' : 'Broadcast'}</button>
           <button onClick={() => onEdit(campaign)} className="px-3 py-1.5 rounded-md text-sm border border-gray-300 text-gray-700 hover:bg-gray-50">Edit</button>
         </div>
         <div className="flex items-center gap-2">
@@ -134,8 +155,8 @@ export default function CampaignCard({ campaign, onEdit, onStart, onPause, onSto
       {showSequence && (
         <div className="mt-5 rounded-lg border bg-gray-50 p-4">
           <div className="text-sm text-gray-700 mb-3">Start sequence for a single lead (email)</div>
-          <div className="flex gap-2 mb-3">
-            <input value={leadEmail} onChange={(e)=>setLeadEmail(e.target.value)} placeholder="lead@company.com" className="flex-1 px-3 py-2 border rounded" />
+          <div className="flex gap-2 mb-3 items-center">
+            <input value={leadEmail} onChange={(e)=>setLeadEmail(e.target.value)} placeholder="lead@company.com" className="flex-1 px-3 py-2 border border-gray-300 rounded-md text-sm placeholder-gray-400" />
             <button
               onClick={async () => {
                 setSeqMsg('')
@@ -156,26 +177,6 @@ export default function CampaignCard({ campaign, onEdit, onStart, onPause, onSto
               disabled={starting}
               className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 disabled:opacity-50"
             >{starting ? 'Starting…' : 'Start'}</button>
-            <button
-              onClick={async () => {
-                setSeqMsg('')
-                if (!token) { setSeqMsg('Please log in'); return }
-                try {
-                  setBulkStarting(true)
-                  const res = await fetch('http://localhost:3001/sequences/start-all', {
-                    method: 'POST', headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ clientId: campaign.client_id, campaignId: campaign.id, channel: 'email' })
-                  })
-                  const data = await res.json()
-                  if (!res.ok) throw new Error(data?.message || 'Failed to enqueue sequences')
-                  setSeqMsg(`Enqueued ${data.enqueued} leads (${data.steps_created} steps) for '${campaign.name}'. Sending first emails…`)
-                  try { await fetch('http://localhost:3001/sequences/tick', { method: 'POST', headers: { 'Authorization': `Bearer ${token}` } }) } catch {}
-                  await loadQueue()
-                } catch (e:any) { setSeqMsg(e.message) } finally { setBulkStarting(false) }
-              }}
-              disabled={bulkStarting}
-              className="px-4 py-2 bg-emerald-600 text-white rounded-md hover:bg-emerald-700 disabled:opacity-50"
-            >{bulkStarting ? 'Enqueuing…' : 'Start For All'}</button>
           </div>
           {seqMsg && <div className="text-sm text-gray-700 mb-2">{seqMsg}</div>}
           <div className="flex items-center justify-between mb-2">
