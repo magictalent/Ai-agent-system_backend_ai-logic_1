@@ -350,6 +350,17 @@ export class SequencesService {
               direction: 'outbound',
             });
 
+            // Mark the lead as contacted for analytics dashboards
+            try {
+              if (lead?.id) {
+                await this.db.update('leads', { id: lead.id }, {
+                  status: ['replied','meeting_scheduled','unsubscribed','closed_won','closed_lost'].includes(lead.status || '') ? lead.status : 'contacted',
+                  last_contacted: new Date().toISOString(),
+                  updated_at: new Date().toISOString(),
+                });
+              }
+            } catch {}
+
             await this.db.update('sequence_queue', { id: item.id }, { status: 'sent', sent_at: new Date().toISOString() });
             results.push({ id: item.id, status: 'sent' });
           } catch (e: any) {
@@ -409,6 +420,5 @@ export class SequencesService {
     return data || [];
   }
 }
-
 
 

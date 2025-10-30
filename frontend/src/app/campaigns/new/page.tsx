@@ -205,7 +205,7 @@ export default function CampaignsCreatePage() {
         <div className="w-full max-w-2xl  border shadow-2xl rounded-xl px-10 py-10 mx-auto relative z-20">
           <div className="flex items-center justify-between mb-8">
             <div>
-              <h2 className="text-xl font-extrabold leading-tight tracking-tight text-white">Product Information</h2>
+              <h2 className="text-xl font-extrabold leading-tight tracking-tight text-black">Product Information</h2>
               <div className="text-xs text-blue-400 font-medium mt-1">Please fill campaign product data</div>
             </div>
             <div>
@@ -230,7 +230,7 @@ export default function CampaignsCreatePage() {
             }}
             onCancel={() => setEditing(null)}
             bgClass="bg-transparent"
-            inputClass="text-white  border border-[#343c89] focus:ring-2 focus:ring-violet-400"
+            inputClass="text-black  border border-[#343c89] focus:ring-2 focus:ring-violet-400"
             labelClass="text-blue-200"
             buttonClass="bg-gradient-to-br from-blue-500 to-violet-500 text-white shadow-md py-2 px-6 rounded-lg font-bold hover:opacity-90"
           />

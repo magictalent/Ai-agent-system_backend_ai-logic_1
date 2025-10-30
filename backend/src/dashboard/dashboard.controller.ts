@@ -43,4 +43,10 @@ export class DashboardController {
   async sequenceWindow() {
     return this.svc.getSequenceWindow();
   }
+
+  // Replies+Errors + reply rates by campaign (last 24h)
+  @Get('replies-errors')
+  async repliesErrors() {
+    return this.svc.getRepliesErrorsAndRates();
+  }
 }

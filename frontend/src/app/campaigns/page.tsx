@@ -3,9 +3,11 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Campaign } from '@/types/campaign'
-import { useAuth } from '@/contexts/AuthContext'
+// import { useAuth } from '@/contexts/AuthContext'
 
 // A simple details component
+import { useAuth } from '@/contexts/AuthContext'
+
 function CampaignDetails({
   campaign,
   onEdit,
@@ -13,6 +15,7 @@ function CampaignDetails({
   onPause,
   onStop,
   onDelete,
+  onBroadcast,
   loadingActionId,
 }: {
   campaign: Campaign | null,
@@ -21,8 +24,41 @@ function CampaignDetails({
   onPause: (id: string) => void,
   onStop: (id: string) => void,
   onDelete: (id: string) => void,
+  onBroadcast: (c: Campaign) => Promise<void>,
   loadingActionId: string | null,
 }) {
+  const { token } = useAuth()
+  const [progress, setProgress] = useState<{ pending: number; sent: number; failed: number; cancelled: number; nextDue?: string } | null>(null)
+  const [progressLoading, setProgressLoading] = useState(false)
+
+  useEffect(() => {
+    const loadProgress = async () => {
+      if (!campaign || !token) return
+      try {
+        setProgressLoading(true)
+        // Load up to 50 queued items to estimate pending/cancelled/failed
+        const qRes = await fetch('http://localhost:3001/sequences/queue', {
+          method: 'POST', headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ campaignId: campaign.id, limit: 50 })
+        })
+        const queue = qRes.ok ? await qRes.json() : []
+        const pending = Array.isArray(queue) ? queue.filter((i:any)=>i.status==='pending').length : 0
+        const cancelled = Array.isArray(queue) ? queue.filter((i:any)=>i.status==='cancelled').length : 0
+        const failed = Array.isArray(queue) ? queue.filter((i:any)=>i.status==='failed').length : 0
+        const nextDue = Array.isArray(queue) && queue.length ? queue.find((i:any)=>i.status==='pending')?.due_at : undefined
+        // Load sent messages to compute sent count
+        const mRes = await fetch(`http://localhost:3001/messages/campaign/${campaign.id}`, { headers: { 'Authorization': `Bearer ${token}` } })
+        const msgs = mRes.ok ? await mRes.json() : []
+        const sent = Array.isArray(msgs) ? msgs.filter((m:any)=>m.direction==='outbound' && m.status==='sent').length : 0
+        setProgress({ pending, sent, failed, cancelled, nextDue })
+      } catch {
+        setProgress({ pending: 0, sent: 0, failed: 0, cancelled: 0 })
+      } finally {
+        setProgressLoading(false)
+      }
+    }
+    loadProgress()
+  }, [campaign?.id, token])
   if (!campaign) {
     return (
       <div className="flex flex-col items-center justify-center h-full">
@@ -36,7 +72,7 @@ function CampaignDetails({
     <div className="p-8">
       <h2 className="text-2xl font-bold text-gray-900 mb-2">{campaign.name}</h2>
       <div className="mb-1 text-gray-600">for <b>{campaign.client_name}</b></div>
-      <div className="flex flex-wrap gap-4 mb-6">
+      <div className="flex flex-wrap gap-2 mb-3">
         <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-gray-100 text-gray-700">
           Status: <span className="ml-1">
             {campaign.status === 'active' && <span className="text-green-600">Active</span>}
@@ -47,7 +83,25 @@ function CampaignDetails({
         </span>
         <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-blue-50 text-blue-800">Channel: {campaign.channel || 'email'}</span>
         <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-purple-50 text-purple-800">Tone: {(campaign as any).tone || 'friendly'}</span>
-        <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-pink-50 text-pink-800">Leads: {campaign.leads_count}</span>
+        <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-pink-50 text-pink-800">Leads: {campaign.leads_count ?? 0}</span>
+        <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-green-50 text-green-800">Response: {(campaign as any).response_rate ?? 0}%</span>
+        <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-amber-50 text-amber-800">Appointments: {(campaign as any).appointments_count ?? 0}</span>
+      </div>
+      {/* Progress */}
+      <div className="mb-6">
+        <div className="text-sm font-medium text-gray-800 mb-1">Progress</div>
+        {progressLoading && <div className="text-xs text-gray-400">Loading progress…</div>}
+        {!progressLoading && progress && (
+          <div className="flex flex-wrap gap-2">
+            <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-blue-50 text-blue-700">Pending: {progress.pending}</span>
+            <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-green-50 text-green-700">Sent: {progress.sent}</span>
+            <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-red-50 text-red-700">Failed: {progress.failed}</span>
+            <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-gray-50 text-gray-700">Cancelled: {progress.cancelled}</span>
+            {progress.nextDue && (
+              <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-violet-50 text-violet-700">Next: {new Date(progress.nextDue).toLocaleString()}</span>
+            )}
+          </div>
+        )}
       </div>
       <div className="mb-4">
         <div className="font-medium text-gray-800 mb-2">Campaign Info</div>
@@ -76,6 +130,11 @@ function CampaignDetails({
             >Stop</button>
           </>
         )}
+        <button
+          className={`px-4 py-2 rounded bg-indigo-600 text-white hover:bg-indigo-700 ${loadingActionId===campaign.id ? 'opacity-60 cursor-wait' : ''}`}
+          onClick={() => onBroadcast(campaign)}
+          disabled={loadingActionId===campaign.id}
+        >Broadcast</button>
         {(campaign.status === 'paused' || campaign.status === 'completed' || campaign.status === 'draft') && (
           <button
             className={`px-4 py-2 rounded bg-red-500 text-white hover:bg-red-600 ${loadingActionId===campaign.id ? 'opacity-60 cursor-wait' : ''}`}
@@ -154,6 +213,25 @@ export default function CampaignsPage() {
       setCampaigns(prev => prev.map(c => c.id === campaignId ? { ...c, status: 'paused' as const } : c))
     } catch (e: any) {
       setError(e?.message || 'Failed to pause')
+    } finally {
+      setLoadingActionId(null)
+    }
+  }
+  const handleBroadcast = async (camp: Campaign) => {
+    try {
+      setLoadingActionId(camp.id)
+      const bulk = await fetch('http://localhost:3001/sequences/start-all', {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ clientId: camp.client_id, campaignId: camp.id, channel: 'email', tone: (camp as any).tone || 'friendly' })
+      })
+      const data = await bulk.json()
+      if (!bulk.ok) throw new Error(data?.message || 'Failed to enqueue sequences')
+      // Bubble the result to detail instead of page banner
+      setCampaigns(prev => prev.map(c => c.id === camp.id ? { ...c, leads_count: (c.leads_count ?? 0) + (data.enqueued ?? 0) } : c))
+      try { await fetch('http://localhost:3001/sequences/tick', { method: 'POST', headers: { 'Authorization': `Bearer ${token}` } }) } catch {}
+    } catch (e:any) {
+      setError(e?.message || 'Broadcast failed')
     } finally {
       setLoadingActionId(null)
     }
@@ -334,6 +412,7 @@ export default function CampaignsPage() {
                 onPause={handlePauseCampaign}
                 onStop={handleStopCampaign}
                 onDelete={handleDeleteCampaign}
+                onBroadcast={handleBroadcast}
                 loadingActionId={loadingActionId}
               />
             )}

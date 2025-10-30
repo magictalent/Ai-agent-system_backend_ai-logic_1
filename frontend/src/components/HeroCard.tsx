@@ -12,21 +12,24 @@ export const HeroCard = ({ message, imageUrl, name }: HeroCardProps) => {
   const [userName, setUserName] = useState<string>(name || "");
 
   useEffect(() => {
-    if (!userName) {
+    if (!name) {
       // Try to fetch logged-in user's name from localStorage
       const storedUserName = localStorage.getItem("userName");
       if (storedUserName) {
         setUserName(storedUserName);
       }
     }
-  }, [userName]);
+  }, [name]);
+
+  // Only show a user name that actually exists
+  if (!userName) return null;
 
   return (
     <div className="relative bg-white rounded-2xl p-6 shadow-lg flex items-center justify-between overflow-hidden">
       <div className="relative z-10">
         <p className="text-gray-900 text-lg">Welcome back,</p>
         <p className="text-gray-900 text-4xl font-bold mt-1">
-          {userName ? userName : "User"}
+          {userName}
         </p>
         <p className="text-gray-600 text-sm mt-2">{message}</p>
         <button className="mt-6 flex items-center text-blue-600 text-sm">
